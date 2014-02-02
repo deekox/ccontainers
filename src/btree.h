@@ -7,7 +7,7 @@
 typedef struct binary_tree_node btnode;
 typedef struct binary_tree      btree;
 typedef int (*comp_fun)(const void *ldata, const void *rdata);
-typedef void (*visitor)(btnode *n);
+typedef void (*visitor_t)(btnode *n);
 
 
 struct binary_tree_node {
@@ -20,7 +20,7 @@ struct binary_tree {
 	btnode *root;	
 	comp_fun comp;
 	size_t size;
-	visitor visit;
+	visitor_t visitor;
 };
 
 

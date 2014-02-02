@@ -57,7 +57,7 @@ void btinit(btree *t, comp_fun cmp)
 		cmp = lt;
 	t->comp = cmp;
 	t->size = 0;
-	t->visit = NULL;
+	t->visitor = NULL;
 }
 
 
@@ -66,7 +66,7 @@ void do_lrv(btree *t, btnode *n)
 	if (n) {
 		do_lrv(t, n->left);
 		do_lrv(t, n->right);
-		t->visit(n);
+		t->visitor(n);
 	}
 }
 
@@ -75,21 +75,21 @@ static void do_clear(btree *t)
 {
 	do_lrv(t, t->root);
 	t->root = NULL;
-	t->visit = NULL;
+	t->visitor = NULL;
 	t->size = 0;
 }
 
 
 void btclear(btree *t)
 {
-	t->visit = free_node_only;
+	t->visitor = free_node_only;
 	do_clear(t);
 }
 
 
 void btdestroy(btree *t)
 {
-	t->visit = free_node_destroy;
+	t->visitor = free_node_destroy;
 	do_clear(t);
 }
 
