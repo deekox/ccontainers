@@ -146,6 +146,7 @@ void *bterase(btree *t, void *data)
 			/* n->right = (*place)->right; */
 			/* *place = (*place)->left; */
 
+			
 			/* usuwanie przez kopiowanie: w przeciwieństwie do delete by merge
 			 * nie powoduje wzrostu wysokości drzewa
 			 * kopiujemy klucz poprzednika do klucza usuwanego noda i
