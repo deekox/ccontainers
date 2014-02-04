@@ -188,7 +188,8 @@ void testTree()
 	printf("sizeof empty tree: %ld\n", (long)btsize(t));
 
 
-	long tab[] = { 16, 8, 24, 12, 36, 44, 50, 30, 20, 27, 21, 22 };
+	long tab[] = { 16, 8, 24, 12, 36, 44, 50,
+	               30, 20, 27, 21, 22, 4, 2, 1, 5 };
 	const int BTSIZE = sizeof tab / sizeof(long);
 	long i;
 	for (i = 0; i < BTSIZE; ++i) {
@@ -204,7 +205,30 @@ void testTree()
 		if ((f = btfind(t, (void*)i))) 
 			printf("%ld ", (long)f->data);
 	}
-	printf("\n");
+	printf("\n\n\n");
+
+	for (i = 0; i < 10; ++i) {
+		btclear(t);
+		long n;
+		for (n = 0; n < i; ++n)
+			btinsert(t, (void *)n);
+		printf("tree #%ld:\n", i);
+		btprint(t);
+		balance_DSW(t);
+		printf("after DSW balance:\n");
+		btprint(t);
+	}
+	
+	/* btprint(t); */
+	/* printf("bt_Day_balance:\n"); */
+	/* balance_Day(t); */
+	/* printf("after\n"); */
+	/* btprint(t); */
+
+	/* printf("bt_DSW_balance:\n"); */
+	/* balance_DSW(t); */
+	/* printf("after\n"); */
+	/* btprint(t); */
 
 	/* printf("removig children:\n"); */
 	/* long chld[] = {27, 33, 40, 50, 12, 20}; */
@@ -232,12 +256,12 @@ void testTree()
 	/* 	btprint(t); */
 	/* } */
 
-	printf("removig all nodes:\n");
-	for (i = 0; i < BTSIZE; ++i) {
-		printf("erase: %ld\n", tab[i]);
-		bterase(t, (void *)tab[i]);
-		btprint(t);
-	}
+	/* printf("removig all nodes:\n"); */
+	/* for (i = 0; i < BTSIZE; ++i) { */
+	/* 	printf("erase: %ld\n", tab[i]); */
+	/* 	bterase(t, (void *)tab[i]); */
+	/* 	btprint(t); */
+	/* } */
 
 
 	/* printf("inserting keys [0 to 50]\n"); */

@@ -55,5 +55,17 @@ static inline int btempty(btree *t)
 {
 	return t->root == NULL;
 }
-	
+
+
+btnode *btrotater(btnode **n);
+
+btnode *btrotatel(btnode **n);
+
+void tree_to_vine(btree *t);
+
+void balance_Day(btree *t);
+
+void balance_DSW(btree *t);
+
+
 #endif /* BTREE_H */

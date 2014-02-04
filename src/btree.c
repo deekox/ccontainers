@@ -183,6 +183,8 @@ void *bterase(btree *t, void *data)
 }
 
 
+
+
 btnode *btfind(btree *t, void *data)
 {
 	return *btsrch_node(t, data);
@@ -234,10 +236,9 @@ void do_walk(btnode *n, int cur, int max, list *levels, int *cnt, int l)
 	}
 }
 
-
-void btprint(const btree *t)
+void do_print(btnode *n)
 {
-	int height = bt_height(t);
+	int height = do_height(n);
 	if (height == 0)
 		return;
 
@@ -249,7 +250,7 @@ void btprint(const btree *t)
 	for (l = 0; l < height; ++l)
 		linit(&levels[l]);
 	l = 0;
-	do_walk(t->root, 0, height, levels, &l, 0);
+	do_walk(n, 0, height, levels, &l, 0);
 
 	for (l = 0; l < height; ++l) {
 		lnode *n = levels[l].head;
@@ -274,3 +275,110 @@ void btprint(const btree *t)
 		ldestroy(&levels[l]);
 	free(levels);
 }
+
+void btprint(const btree *t)
+{
+	do_print(t->root);
+}
+btnode *btrotater(btnode **n)
+{
+	btnode *newRoot = NULL;
+	if ((*n) != NULL && (*n)->left != NULL) {
+		newRoot = (*n)->left;
+		(*n)->left = newRoot->right;
+		newRoot->right = *n;
+		*n = newRoot;
+	}
+	return newRoot;
+}
+
+
+btnode *btrotatel(btnode **n)
+{
+	btnode *newRoot = NULL;
+	if ((*n) != NULL && (*n)->right != NULL) {
+		newRoot = (*n)->right;
+		(*n)->right = newRoot->left;
+		newRoot->left = *n;
+		*n = newRoot;
+	}
+	return newRoot;
+}
+
+void DSW_compression(btnode *root, int cnt)
+{
+	btnode *sc = root;			
+  	int j;
+	for (j = 0; j < cnt; ++j) {
+		btnode *chld = sc->right;
+		sc->right = chld->right;
+		sc = sc->right;
+		chld->right = sc->left;
+		sc->left = chld;
+		/* printf("\n%d/%d:\n", j + 1, cnt); */
+		/* do_print(root); */
+	}
+}
+
+
+void vine_to_tree_D(btree *t)
+{
+	btnode pseudo_root;
+	pseudo_root.data = 0;
+	pseudo_root.left = NULL;
+	pseudo_root.right = t->root;
+
+	int NBack = t->size - 1;
+	int M;
+	for (M = NBack /2; M > 0; M = NBack / 2) {
+		DSW_compression(&pseudo_root, M);
+		NBack = NBack - M - 1;
+	}
+	t->root = pseudo_root.right;
+}
+
+size_t v2t_DSW_FullSize(size_t size)
+{
+	size_t Rtn = 1;
+	while (Rtn <= size)
+		Rtn = Rtn + Rtn + 1;
+	return Rtn / 2;
+}
+
+void vine_to_tree_DSW(btree *t)
+{
+	btnode pseudo_root;
+	pseudo_root.data = 0;
+	pseudo_root.left = NULL;
+	pseudo_root.right = t->root;
+
+	size_t size = t->size;
+	size_t full_count = v2t_DSW_FullSize(size);
+	DSW_compression(&pseudo_root, size - full_count);
+	for (size = full_count; size > 1; size /= 2)
+		DSW_compression(&pseudo_root, size / 2);
+
+	t->root = pseudo_root.right;
+}
+
+void tree_to_vine(btree *t)
+{
+	btnode **n = &t->root;
+	while (*n) {
+		if ((*n)->left)
+			while (btrotater(n));
+		n = &(*n)->right;
+	}
+}
+void balance_Day(btree *t)
+{
+	tree_to_vine(t);
+	vine_to_tree_D(t);
+}
+
+void balance_DSW(btree *t)
+{
+	tree_to_vine(t);
+	vine_to_tree_DSW(t);
+}
+
