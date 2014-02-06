@@ -3,11 +3,10 @@
 
 #include <stdlib.h>
 
+#include "common.h"
 
 typedef struct binary_tree_node btnode;
 typedef struct binary_tree      btree;
-typedef int (*comp_fun)(const void *ldata, const void *rdata);
-typedef void (*visitor_t)(btnode *n);
 
 
 struct binary_tree_node {
@@ -67,5 +66,6 @@ void balance_Day(btree *t);
 
 void balance_DSW(btree *t);
 
+size_t v2t_DSW_FullSize(size_t size);
 
 #endif /* BTREE_H */

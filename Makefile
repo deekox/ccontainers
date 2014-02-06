@@ -5,7 +5,7 @@ CFLAGS += $(DEBUGFLAGS)
 SDIR = src
 ODIR = obj
 TARGET = test
-_OBJS = btree.o test.o list.o
+_OBJS = btree.o test.o list.o common.o #avltree.o common.o
 OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
 
 
@@ -21,6 +21,9 @@ $(ODIR)/%.o: $(SDIR)/%.c
 
 $(ODIR)/btree.o : $(SDIR)/btree.c $(SDIR)/btree.h
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# $(ODIR)/avltree.o : $(SDIR)/avltree.c $(SDIR)/avltree.h
+# 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(ODIR)/list.o : $(SDIR)/list.c $(SDIR)/list.h
 	$(CC) $(CFLAGS) -c -o $@ $<	

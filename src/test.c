@@ -197,7 +197,7 @@ void testTree()
 		btinsert(t, (void *)tab[i]);
 	}
 	printf("size after %d inserts: %ld\n", BTSIZE, (long)btsize(t));
-	btprint(t);
+	bin_tree_print(t->root);
 
 	printf("searching keys [0 to 50]\n");
 	for (i = 0; i < 51; ++i) {
@@ -205,19 +205,32 @@ void testTree()
 		if ((f = btfind(t, (void*)i))) 
 			printf("%ld ", (long)f->data);
 	}
+	balance_Day(t);
+	printf("\nafter Day's balance\n");
+	bin_tree_print(t->root);
 	printf("\n\n\n");
 
-	for (i = 0; i < 10; ++i) {
+	i = 10;
+	int dsw = 0;
+	for (dsw = 0; dsw < 2; ++dsw) {
 		btclear(t);
 		long n;
 		for (n = 0; n < i; ++n)
 			btinsert(t, (void *)n);
-		printf("tree #%ld:\n", i);
-		btprint(t);
-		balance_DSW(t);
-		printf("after DSW balance:\n");
-		btprint(t);
+		printf("tree #%ld(size:%ld):\n", i, (long)btsize(t));
+		bin_tree_print(t->root);
+		if (dsw) {
+			printf("DSW balancing\n");
+			balance_DSW(t);
+			printf("after DSW balance:\n");
+		} else {
+			printf("Day's balancing\n");
+			balance_Day(t);
+			printf("after Day's balance:\n");	
+		}
+		bin_tree_print(t->root);
 	}
+
 	
 	/* btprint(t); */
 	/* printf("bt_Day_balance:\n"); */
@@ -272,14 +285,10 @@ void testTree()
 	/* printf("size after isertion: %ld\n", (long)btsize(t)); */
 	/* btprint(t); */
 
-
-
-
-	
-	printf("size of tree: %ld\n", (long)btsize(t));
 	btclear(t);
-	printf("size of three after clear: %ld\n", (long)btsize(t));
-	
+
+	for (i = 0; i < 20; ++i)
+		printf("%ld: %ld\n", i, (long)v2t_DSW_FullSize(i));
 }
 
 int main(int argc, char *argv[])
