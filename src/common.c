@@ -39,6 +39,7 @@ struct pair
 	int left;
 };
 
+
 /* n - aktualnie odwiedzany węzeł
  * cur - aktualny poziom drzewa
  * max - maksymalny poziom drzewa
@@ -58,6 +59,7 @@ void do_walk(btnode *n, int cur, int max, list *levels, int *cnt, int l)
 		do_walk(n->right, cur + 1, max, levels, cnt, 1);
 	}
 }
+
 
 void bin_tree_print(btnode *n)
 {

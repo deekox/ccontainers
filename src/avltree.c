@@ -9,7 +9,7 @@ static btnode *alloc_node(void *data)
 {
 	btnode * n = malloc(sizeof(btnode));
 	if (!n) return NULL;
-	n->left = n->right = NULL;
+	n->left = n->right = n->parent = NULL;
 	n->data = data;
 	return n;
 }
@@ -175,96 +175,8 @@ btnode *btfind(btree *t, void *data)
 	return *btsrch_node(t, data);
 }
 
-int do_height(const btnode *n)
-{
-	if (n == NULL)
-		return 0;
-	return 1 + max(do_height(n->left),
-	               do_height(n->right));
-}
 
 
-/* height 0 - emty tree
- * height 1 - only root
- * etc
- */
-int bt_height(const btree *t)
-{
-	return do_height(t->root);
-}
-
-
-struct pair
-{
-	long value;
-	long order;
-	int left;
-};
-
-/* n - aktualnie odwiedzany węzeł
- * cur - aktualny poziom drzewa
- * max - maksymalny poziom drzewa
- * l - czy aktualnie odwiedzany węzeł to jest lewe dziecko
- */
-void do_walk(btnode *n, int cur, int max, list *levels, int *cnt, int l)
-{
-	if (cur < max && n != NULL) {
-		do_walk(n->left, cur + 1, max, levels, cnt, -1);
-
-		struct pair *pp = malloc(sizeof(struct pair));
-		pp->value = (long)n->data;
-		pp->order = (*cnt)++;
-		pp->left = l;
-		lpush_back(&levels[cur], pp);
-		/* printf("[%d] cnt:%ld  val:%ld\n", cur, pp->order, pp->value); */
-		do_walk(n->right, cur + 1, max, levels, cnt, 1);
-	}
-}
-
-void do_print(btnode *n)
-{
-	int height = do_height(n);
-	if (height == 0)
-		return;
-
-	list *levels = malloc(sizeof(list) * height);
-	if (levels == NULL)
-		return;
-
-	int l;
-	for (l = 0; l < height; ++l)
-		linit(&levels[l]);
-	l = 0;
-	do_walk(n, 0, height, levels, &l, 0);
-
-	for (l = 0; l < height; ++l) {
-		lnode *n = levels[l].head;
-		long t = 0;
-		while (n) {
-			long order = ((struct pair *)n->data)->order;
-			order -= t;
-			int left = ((struct pair *)n->data)->left;
-			while (++t && order--) 
-				printf("  ");
-			
-			printf("%2ld", ((struct pair *)n->data)->value);
-			if (left == -1) {
-				printf("/ ");
-				++t;
-			}
-			n = n->next;
-		}
-		printf("\n");
-	}
-	for (l = 0; l < height; ++l)
-		ldestroy(&levels[l]);
-	free(levels);
-}
-
-void btprint(const btree *t)
-{
-	do_print(t->root);
-}
 btnode *btrotater(btnode **n)
 {
 	btnode *newRoot = NULL;
@@ -289,87 +201,3 @@ btnode *btrotatel(btnode **n)
 	}
 	return newRoot;
 }
-
-void DSW_compression(btnode *root, int cnt)
-{
-	btnode *sc = root;			
-  	int j;
-	for (j = 0; j < cnt; ++j) {
-		btnode *chld = sc->right;
-		sc->right = chld->right;
-		sc = sc->right;
-		chld->right = sc->left;
-		sc->left = chld;
-		printf("\n%d/%d:\n", j + 1, cnt);
-		do_print(root);
-	}
-}
-
-
-void vine_to_tree_Day(btree *t)
-{
-	btnode pseudo_root;
-	pseudo_root.data = 0;
-	pseudo_root.left = NULL;
-	pseudo_root.right = t->root;
-
-	int NBack = t->size - 1;
-	int M;
-	int rot = 0;
-	for (M = NBack /2; M > 0; M = NBack / 2) {
-		DSW_compression(&pseudo_root, M);
-		NBack = NBack - M - 1;
-		rot += M;
-	}
-	t->root = pseudo_root.right;
-	printf("TOTAL ROTATIONS: %d\n\n", rot);
-}
-
-size_t v2t_DSW_FullSize(size_t size)
-{
-	size_t Rtn = 1;
-	while (Rtn <= size)
-		Rtn = Rtn + Rtn + 1;
-	return Rtn / 2;
-}
-
-void vine_to_tree_DSW(btree *t)
-{
-	btnode pseudo_root;
-	pseudo_root.data = 0;
-	pseudo_root.left = NULL;
-	pseudo_root.right = t->root;
-
-	size_t size = t->size;
-	size_t full_count = v2t_DSW_FullSize(size);
-	DSW_compression(&pseudo_root, size - full_count);
-	int rot = size - full_count;
-	for (size = full_count; size > 1; size /= 2) {
-		DSW_compression(&pseudo_root, size / 2);
-		rot += size / 2;
-	}
-	printf("TOTAL ROTATIONS: %d\n\n", rot);
-	t->root = pseudo_root.right;
-}
-
-void tree_to_vine(btree *t)
-{
-	btnode **n = &t->root;
-	while (*n) {
-		if ((*n)->left)
-			while (btrotater(n));
-		n = &(*n)->right;
-	}
-}
-void balance_Day(btree *t)
-{
-	tree_to_vine(t);
-	vine_to_tree_Day(t);
-}
-
-void balance_DSW(btree *t)
-{
-	tree_to_vine(t);
-	vine_to_tree_DSW(t);
-}
-
