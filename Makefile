@@ -8,6 +8,8 @@ TARGET = test
 _OBJS = btree.o test.o list.o common.o #avltree.o common.o
 OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
 
+#coś tu dodam bo tak
+
 .PHONY : clean rebuild
 all : $(TARGET)
 
