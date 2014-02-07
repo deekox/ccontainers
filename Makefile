@@ -36,4 +36,4 @@ clean :
 rebuild: clean all
 
 directories:
-	mkdir $(ODIR)
+	mkdir -p $(ODIR)
