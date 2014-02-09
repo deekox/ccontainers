@@ -1,41 +1,47 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <errno.h>
-#include "btree.h"
+#include <assert.h>
+
+#include "avltree.h"
 #include "list.h"
 
 
-static btnode *alloc_node(void *data)
+
+static avlnode *alloc_node(void *data)
 {
-	btnode * n = malloc(sizeof(btnode));
+	avlnode *n = malloc(sizeof(avlnode));
 	if (!n) return NULL;
-	n->left = n->right = NULL;
+	n->left = n->right = n->parent = NULL;
 	n->data = data;
+	n->height = -1;
 	return n;
 }
 
 
-static void free_node(btnode *n, int destroy_data)
+void avlrenderer(btnode *node, char *buf)
 {
-	if (destroy_data)
-		free(n->data);
-	free(n);
+	avlnode *n = (avlnode *)node;
+	int i;
+	for (i = 0; i < 10; ++i)
+		buf[i] = ' ';
+	if (n->parent)
+		snprintf(buf, 11, "(%2ld %2ld %2ld)",
+		         (long)n->data, (long)n->height, (long)n->parent->data);
+	else
+		snprintf(buf, 11, "(%2ld %2ld NL)", (long)n->data, (long)n->height);
+	buf[10] = '\0';
+
+	/* if (n->parent) */
+	/* 	snprintf(buf, 10, "%2ld_%2ld_%2ld", */
+	/* 	         (long)n->data, (long)n->height, (long)n->parent->data); */
+	/* else */
+	/* 	snprintf(buf, 10, "%2ld_%2ld_  ", (long)n->data, (long)n->height); */
 }
 
 
-static void free_node_only(btnode *n)
-{
-	free_node(n, 0);
-}
-
-
-static void free_node_destroy(btnode *n)
-{
-	free_node(n, 1);
-}
-
-
-void btinit(btree *t, comp_fun cmp)
+void avlinit(avltree *t, comp_fun cmp)
 {
 	t->root = NULL;
 	if (cmp == NULL)
@@ -46,17 +52,17 @@ void btinit(btree *t, comp_fun cmp)
 }
 
 
-void do_lrv(btree *t, btnode *n)
+static void do_lrv(avltree *t, avlnode *n)
 {
 	if (n) {
 		do_lrv(t, n->left);
 		do_lrv(t, n->right);
-		t->visitor(n);
+		t->visitor((btnode *)n);
 	}
 }
 
 
-static void do_clear(btree *t)
+static void do_clear(avltree *t)
 {
 	do_lrv(t, t->root);
 	t->root = NULL;
@@ -65,42 +71,76 @@ static void do_clear(btree *t)
 }
 
 
-void btclear(btree *t)
+void avlclear(avltree *t)
 {
 	t->visitor = free_node_only;
 	do_clear(t);
 }
 
 
-void btdestroy(btree *t)
+void avldestroy(avltree *t)
 {
 	t->visitor = free_node_destroy;
 	do_clear(t);
 }
 
 
-static btnode **btsrch_node(btree *t, void *data)
+void goup(avlnode *node)
 {
-	btnode **cur = &t->root;
+	while (node) {
+		int lh = -1, rh = -1;
+		if (node->left)
+			lh = node->left->height;
+		if (node->right)
+			rh = node->right->height;
+		node->height = max(lh, rh) + 1;
+		/* printf("data: %ld\n", (long)node->data); */
+		node = node->parent;
+	}
+}
+
+
+/* cmp zwraca wynik ostatniego użycia funkcji comp
+ * funkcja lower powinna zwracać 1 gdy dana jest mniejsza
+ * cmp ==  1 zwracany jest: &parent->left
+ * cmp == -1 &parent->right
+ * cmp ==  0 oznacza, że dany klucz już istnieje
+ */
+static avlnode **avlsrch_node(avltree *t, void *data, int *cmp)
+{
+	avlnode **cur = &t->root;
+	if (cmp) *cmp = 0;
 	int r;
 	while (*cur) {
 		r = t->comp(data, (*cur)->data);
+		if (cmp)
+			*cmp = r;
 		if (r == 0) 
 			break;
-		cur = (r > 0) ? &((*cur)->left) : &((*cur)->right);
+		cur = (r > 0) ? &(*cur)->left : &(*cur)->right;
 	}
 	return cur;
 }
 
 
-btnode *btinsert(btree *t, void *data)
+avlnode *avlinsert(avltree *t, void *data)
 {
-	btnode **place = btsrch_node(t, data);
+	int cmp;
+	avlnode **place = avlsrch_node(t, data, &cmp);
 	if (*place == NULL) {
-		btnode *n = alloc_node(data);
+		avlnode *n = alloc_node(data);
 		if (n == NULL)
 			return NULL;
 		*place = n;
+		avlnode *parent;
+		if (cmp > 0)  			/* place wskazuje na &parent->left */
+			parent = (avlnode *)place;
+		else if (cmp < 0) 	/* place = &parent->right */
+			parent = (avlnode *)((void *)place - offsetof(avlnode, right));
+		else
+			parent = NULL; 		/* root */
+		n->parent = parent;
+		goup(n);
 		++t->size;
 		errno = 0;
 	} else {  /* próba wstawienia istniejącej wartości */
@@ -110,11 +150,12 @@ btnode *btinsert(btree *t, void *data)
 }
 
 
-void *bterase(btree *t, void *data)
+void *avlerase(avltree *t, void *data)
 {
-	btnode **place = btsrch_node(t, data);
+	int cmp; 		
+	avlnode **place = avlsrch_node(t, data, &cmp);
 	if (*place != NULL) {
-		btnode *tmp = *place;
+		avlnode *tmp = *place;
 		void *data = (*place)->data;
 
 		/* no children or one child */
@@ -137,7 +178,7 @@ void *bterase(btree *t, void *data)
 			 * kopiujemy klucz poprzednika do klucza usuwanego noda i
 			 * modyfikujemy rodzica poprzednika tak by pokazywał na dziecko
 			 * poprzednika. Samego poprzednika usuwamy */
-			btnode *n = (*place)->left, *prev = *place;
+			avlnode *n = (*place)->left, *prev = *place;
 			while (n->right != NULL) {
 				prev = n;
 				n = n->right;
@@ -160,7 +201,7 @@ void *bterase(btree *t, void *data)
 			else
 				prev->right = n->left;
 		}
-		free_node_only(tmp);			
+		free_node_only((btnode *)tmp);			
 		--t->size;
 		return data;
 	}
@@ -168,208 +209,34 @@ void *bterase(btree *t, void *data)
 }
 
 
-
-
-btnode *btfind(btree *t, void *data)
+avlnode *avlfind(avltree *t, void *data)
 {
-	return *btsrch_node(t, data);
-}
-
-int do_height(const btnode *n)
-{
-	if (n == NULL)
-		return 0;
-	return 1 + max(do_height(n->left),
-	               do_height(n->right));
+	return *avlsrch_node(t, data, NULL);
 }
 
 
-/* height 0 - emty tree
- * height 1 - only root
- * etc
- */
-int bt_height(const btree *t)
-{
-	return do_height(t->root);
-}
+/* btnode *btrotater(btnode **n) */
+/* { */
+/* 	btnode *newRoot = NULL; */
+/* 	if ((*n) != NULL && (*n)->left != NULL) { */
+/* 		newRoot = (*n)->left; */
+/* 		(*n)->left = newRoot->right; */
+/* 		newRoot->right = *n; */
+/* 		*n = newRoot; */
+/* 	} */
+/* 	return newRoot; */
+/* } */
 
 
-struct pair
-{
-	long value;
-	long order;
-	int left;
-};
-
-/* n - aktualnie odwiedzany węzeł
- * cur - aktualny poziom drzewa
- * max - maksymalny poziom drzewa
- * l - czy aktualnie odwiedzany węzeł to jest lewe dziecko
- */
-void do_walk(btnode *n, int cur, int max, list *levels, int *cnt, int l)
-{
-	if (cur < max && n != NULL) {
-		do_walk(n->left, cur + 1, max, levels, cnt, -1);
-
-		struct pair *pp = malloc(sizeof(struct pair));
-		pp->value = (long)n->data;
-		pp->order = (*cnt)++;
-		pp->left = l;
-		lpush_back(&levels[cur], pp);
-		/* printf("[%d] cnt:%ld  val:%ld\n", cur, pp->order, pp->value); */
-		do_walk(n->right, cur + 1, max, levels, cnt, 1);
-	}
-}
-
-void do_print(btnode *n)
-{
-	int height = do_height(n);
-	if (height == 0)
-		return;
-
-	list *levels = malloc(sizeof(list) * height);
-	if (levels == NULL)
-		return;
-
-	int l;
-	for (l = 0; l < height; ++l)
-		linit(&levels[l]);
-	l = 0;
-	do_walk(n, 0, height, levels, &l, 0);
-
-	for (l = 0; l < height; ++l) {
-		lnode *n = levels[l].head;
-		long t = 0;
-		while (n) {
-			long order = ((struct pair *)n->data)->order;
-			order -= t;
-			int left = ((struct pair *)n->data)->left;
-			while (++t && order--) 
-				printf("  ");
-			
-			printf("%2ld", ((struct pair *)n->data)->value);
-			if (left == -1) {
-				printf("/ ");
-				++t;
-			}
-			n = n->next;
-		}
-		printf("\n");
-	}
-	for (l = 0; l < height; ++l)
-		ldestroy(&levels[l]);
-	free(levels);
-}
-
-void btprint(const btree *t)
-{
-	do_print(t->root);
-}
-btnode *btrotater(btnode **n)
-{
-	btnode *newRoot = NULL;
-	if ((*n) != NULL && (*n)->left != NULL) {
-		newRoot = (*n)->left;
-		(*n)->left = newRoot->right;
-		newRoot->right = *n;
-		*n = newRoot;
-	}
-	return newRoot;
-}
-
-
-btnode *btrotatel(btnode **n)
-{
-	btnode *newRoot = NULL;
-	if ((*n) != NULL && (*n)->right != NULL) {
-		newRoot = (*n)->right;
-		(*n)->right = newRoot->left;
-		newRoot->left = *n;
-		*n = newRoot;
-	}
-	return newRoot;
-}
-
-void DSW_compression(btnode *root, int cnt)
-{
-	btnode *sc = root;			
-  	int j;
-	for (j = 0; j < cnt; ++j) {
-		btnode *chld = sc->right;
-		sc->right = chld->right;
-		sc = sc->right;
-		chld->right = sc->left;
-		sc->left = chld;
-		printf("\n%d/%d:\n", j + 1, cnt);
-		do_print(root);
-	}
-}
-
-
-void vine_to_tree_Day(btree *t)
-{
-	btnode pseudo_root;
-	pseudo_root.data = 0;
-	pseudo_root.left = NULL;
-	pseudo_root.right = t->root;
-
-	int NBack = t->size - 1;
-	int M;
-	int rot = 0;
-	for (M = NBack /2; M > 0; M = NBack / 2) {
-		DSW_compression(&pseudo_root, M);
-		NBack = NBack - M - 1;
-		rot += M;
-	}
-	t->root = pseudo_root.right;
-	printf("TOTAL ROTATIONS: %d\n\n", rot);
-}
-
-size_t v2t_DSW_FullSize(size_t size)
-{
-	size_t Rtn = 1;
-	while (Rtn <= size)
-		Rtn = Rtn + Rtn + 1;
-	return Rtn / 2;
-}
-
-void vine_to_tree_DSW(btree *t)
-{
-	btnode pseudo_root;
-	pseudo_root.data = 0;
-	pseudo_root.left = NULL;
-	pseudo_root.right = t->root;
-
-	size_t size = t->size;
-	size_t full_count = v2t_DSW_FullSize(size);
-	DSW_compression(&pseudo_root, size - full_count);
-	int rot = size - full_count;
-	for (size = full_count; size > 1; size /= 2) {
-		DSW_compression(&pseudo_root, size / 2);
-		rot += size / 2;
-	}
-	printf("TOTAL ROTATIONS: %d\n\n", rot);
-	t->root = pseudo_root.right;
-}
-
-void tree_to_vine(btree *t)
-{
-	btnode **n = &t->root;
-	while (*n) {
-		if ((*n)->left)
-			while (btrotater(n));
-		n = &(*n)->right;
-	}
-}
-void balance_Day(btree *t)
-{
-	tree_to_vine(t);
-	vine_to_tree_Day(t);
-}
-
-void balance_DSW(btree *t)
-{
-	tree_to_vine(t);
-	vine_to_tree_DSW(t);
-}
+/* btnode *btrotatel(btnode **n) */
+/* { */
+/* 	btnode *newRoot = NULL; */
+/* 	if ((*n) != NULL && (*n)->right != NULL) { */
+/* 		newRoot = (*n)->right; */
+/* 		(*n)->right = newRoot->left; */
+/* 		newRoot->left = *n; */
+/* 		*n = newRoot; */
+/* 	} */
+/* 	return newRoot; */
+/* } */
 

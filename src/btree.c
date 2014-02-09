@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include "btree.h"
-#include "list.h"
+/* #include "list.h"				 */
 
 
 
-static btnode *alloc_node(void *data)
+btnode *alloc_node(void *data)
 {
 	btnode * n = malloc(sizeof(btnode));
 	if (!n) return NULL;
@@ -16,24 +16,6 @@ static btnode *alloc_node(void *data)
 }
 
 
-static void free_node(btnode *n, int destroy_data)
-{
-	if (destroy_data)
-		free(n->data);
-	free(n);
-}
-
-
-static void free_node_only(btnode *n)
-{
-	free_node(n, 0);
-}
-
-
-static void free_node_destroy(btnode *n)
-{
-	free_node(n, 1);
-}
 
 
 void btinit(btree *t, comp_fun cmp)
@@ -212,7 +194,7 @@ void DSW_compression(btnode *root, int cnt)
 		chld->right = sc->left;
 		sc->left = chld;
 		printf("\n%d/%d:\n", j + 1, cnt);
-		bin_tree_print(root);
+		bin_tree_print(root, NULL);
 	}
 }
 

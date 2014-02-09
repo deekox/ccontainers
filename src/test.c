@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include "btree.h"
+#include "avltree.h"
 #include "list.h"
 
 void printli(const list *l)
@@ -179,121 +179,145 @@ int testList()
 }
 
 
-void testTree()
-{
-	btree bt, *t;
-	t = &bt;
-	btinit(t, NULL);
+/* void testTree() */
+/* { */
+/* 	btree bt, *t; */
+/* 	t = &bt; */
+/* 	btinit(t, NULL); */
 
-	printf("sizeof empty tree: %ld\n", (long)btsize(t));
+/* 	printf("sizeof empty tree: %ld\n", (long)btsize(t)); */
 
 
-	long tab[] = { 16, 8, 24, 12, 36, 44, 50,
-	               30, 20, 27, 21, 22, 4, 2, 1, 5 };
-	const int BTSIZE = sizeof tab / sizeof(long);
-	long i;
-	for (i = 0; i < BTSIZE; ++i) {
-		printf("inserting %ld\n", tab[i]);
-		btinsert(t, (void *)tab[i]);
-	}
-	printf("size after %d inserts: %ld\n", BTSIZE, (long)btsize(t));
-	bin_tree_print(t->root);
+/* 	long tab[] = { 16, 8, 24, 12, 36, 44, 50, */
+/* 	               30, 20, 27, 21, 22, 4, 2, 1, 5 }; */
+/* 	const int BTSIZE = sizeof tab / sizeof(long); */
+/* 	long i; */
+/* 	for (i = 0; i < BTSIZE; ++i) { */
+/* 		printf("inserting %ld\n", tab[i]); */
+/* 		btinsert(t, (void *)tab[i]); */
+/* 	} */
+/* 	printf("size after %d inserts: %ld\n", BTSIZE, (long)btsize(t)); */
+/* 	bin_tree_print(t->root); */
 
-	printf("searching keys [0 to 50]\n");
-	for (i = 0; i < 51; ++i) {
-		btnode *f;
-		if ((f = btfind(t, (void*)i))) 
-			printf("%ld ", (long)f->data);
-	}
-	balance_Day(t);
-	printf("\nafter Day's balance\n");
-	bin_tree_print(t->root);
-	printf("\n\n\n");
+/* 	printf("searching keys [0 to 50]\n"); */
+/* 	for (i = 0; i < 51; ++i) { */
+/* 		btnode *f; */
+/* 		if ((f = btfind(t, (void*)i)))  */
+/* 			printf("%ld ", (long)f->data); */
+/* 	} */
+/* 	balance_Day(t); */
+/* 	printf("\nafter Day's balance\n"); */
+/* 	bin_tree_print(t->root); */
+/* 	printf("\n\n\n"); */
 
-	i = 10;
-	int dsw = 0;
-	for (dsw = 0; dsw < 2; ++dsw) {
-		btclear(t);
-		long n;
-		for (n = 0; n < i; ++n)
-			btinsert(t, (void *)n);
-		printf("tree #%ld(size:%ld):\n", i, (long)btsize(t));
-		bin_tree_print(t->root);
-		if (dsw) {
-			printf("DSW balancing\n");
-			balance_DSW(t);
-			printf("after DSW balance:\n");
-		} else {
-			printf("Day's balancing\n");
-			balance_Day(t);
-			printf("after Day's balance:\n");	
-		}
-		bin_tree_print(t->root);
-	}
+/* 	i = 10; */
+/* 	int dsw = 0; */
+/* 	for (dsw = 0; dsw < 2; ++dsw) { */
+/* 		btclear(t); */
+/* 		long n; */
+/* 		for (n = 0; n < i; ++n) */
+/* 			btinsert(t, (void *)n); */
+/* 		printf("tree #%ld(size:%ld):\n", i, (long)btsize(t)); */
+/* 		bin_tree_print(t->root); */
+/* 		if (dsw) { */
+/* 			printf("DSW balancing\n"); */
+/* 			balance_DSW(t); */
+/* 			printf("after DSW balance:\n"); */
+/* 		} else { */
+/* 			printf("Day's balancing\n"); */
+/* 			balance_Day(t); */
+/* 			printf("after Day's balance:\n");	 */
+/* 		} */
+/* 		bin_tree_print(t->root); */
+/* 	} */
 
 	
-	/* btprint(t); */
-	/* printf("bt_Day_balance:\n"); */
-	/* balance_Day(t); */
-	/* printf("after\n"); */
-	/* btprint(t); */
+/* 	/\* btprint(t); *\/ */
+/* 	/\* printf("bt_Day_balance:\n"); *\/ */
+/* 	/\* balance_Day(t); *\/ */
+/* 	/\* printf("after\n"); *\/ */
+/* 	/\* btprint(t); *\/ */
 
-	/* printf("bt_DSW_balance:\n"); */
-	/* balance_DSW(t); */
-	/* printf("after\n"); */
-	/* btprint(t); */
+/* 	/\* printf("bt_DSW_balance:\n"); *\/ */
+/* 	/\* balance_DSW(t); *\/ */
+/* 	/\* printf("after\n"); *\/ */
+/* 	/\* btprint(t); *\/ */
 
-	/* printf("removig children:\n"); */
-	/* long chld[] = {27, 33, 40, 50, 12, 20}; */
-	/* for (i = 0; i < sizeof(chld)/sizeof(long); ++i) { */
-	/* 	printf("erase: %ld\n", chld[i]); */
-	/* 	bterase(t, (void *)chld[i]); */
-	/* 	btprint(t); */
-	/* } */
-
-
-	/* printf("removig inner nodes with two childred:\n"); */
-	/* long inner_one[] = {36, 24}; */
-	/* for (i = 0; i < sizeof(inner_one)/sizeof(long); ++i) { */
-	/* 	printf("erase: %ld\n", inner_one[i]); */
-	/* 	bterase(t, (void *)inner_one[i]); */
-	/* 	btprint(t); */
-	/* } */
+/* 	/\* printf("removig children:\n"); *\/ */
+/* 	/\* long chld[] = {27, 33, 40, 50, 12, 20}; *\/ */
+/* 	/\* for (i = 0; i < sizeof(chld)/sizeof(long); ++i) { *\/ */
+/* 	/\* 	printf("erase: %ld\n", chld[i]); *\/ */
+/* 	/\* 	bterase(t, (void *)chld[i]); *\/ */
+/* 	/\* 	btprint(t); *\/ */
+/* 	/\* } *\/ */
 
 
-	/* printf("removig inner nodes with one child:\n"); */
-	/* long inner_one[] = {8, 44, 30}; */
-	/* for (i = 0; i < sizeof(inner_one)/sizeof(long); ++i) { */
-	/* 	printf("erase: %ld\n", inner_one[i]); */
-	/* 	bterase(t, (void *)inner_one[i]); */
-	/* 	btprint(t); */
-	/* } */
-
-	/* printf("removig all nodes:\n"); */
-	/* for (i = 0; i < BTSIZE; ++i) { */
-	/* 	printf("erase: %ld\n", tab[i]); */
-	/* 	bterase(t, (void *)tab[i]); */
-	/* 	btprint(t); */
-	/* } */
+/* 	/\* printf("removig inner nodes with two childred:\n"); *\/ */
+/* 	/\* long inner_one[] = {36, 24}; *\/ */
+/* 	/\* for (i = 0; i < sizeof(inner_one)/sizeof(long); ++i) { *\/ */
+/* 	/\* 	printf("erase: %ld\n", inner_one[i]); *\/ */
+/* 	/\* 	bterase(t, (void *)inner_one[i]); *\/ */
+/* 	/\* 	btprint(t); *\/ */
+/* 	/\* } *\/ */
 
 
-	/* printf("inserting keys [0 to 50]\n"); */
-	/* for (i = 0; i < 51; ++i)  */
-	/* 	if (btinsert(t, (void *)i) != NULL) */
-	/* 		if (errno == EEXIST) */
-	/* 			fprintf(stderr, "%ld already in set\n", i); */
-	/* printf("size after isertion: %ld\n", (long)btsize(t)); */
-	/* btprint(t); */
+/* 	/\* printf("removig inner nodes with one child:\n"); *\/ */
+/* 	/\* long inner_one[] = {8, 44, 30}; *\/ */
+/* 	/\* for (i = 0; i < sizeof(inner_one)/sizeof(long); ++i) { *\/ */
+/* 	/\* 	printf("erase: %ld\n", inner_one[i]); *\/ */
+/* 	/\* 	bterase(t, (void *)inner_one[i]); *\/ */
+/* 	/\* 	btprint(t); *\/ */
+/* 	/\* } *\/ */
 
-	btclear(t);
+/* 	/\* printf("removig all nodes:\n"); *\/ */
+/* 	/\* for (i = 0; i < BTSIZE; ++i) { *\/ */
+/* 	/\* 	printf("erase: %ld\n", tab[i]); *\/ */
+/* 	/\* 	bterase(t, (void *)tab[i]); *\/ */
+/* 	/\* 	btprint(t); *\/ */
+/* 	/\* } *\/ */
 
-	for (i = 0; i < 20; ++i)
-		printf("%ld: %ld\n", i, (long)v2t_DSW_FullSize(i));
+
+/* 	/\* printf("inserting keys [0 to 50]\n"); *\/ */
+/* 	/\* for (i = 0; i < 51; ++i)  *\/ */
+/* 	/\* 	if (btinsert(t, (void *)i) != NULL) *\/ */
+/* 	/\* 		if (errno == EEXIST) *\/ */
+/* 	/\* 			fprintf(stderr, "%ld already in set\n", i); *\/ */
+/* 	/\* printf("size after isertion: %ld\n", (long)btsize(t)); *\/ */
+/* 	/\* btprint(t); *\/ */
+
+/* 	btclear(t); */
+
+/* 	for (i = 0; i < 20; ++i) */
+/* 		printf("%ld: %ld\n", i, (long)v2t_DSW_FullSize(i)); */
+/* } */
+
+void testAVL()
+{
+	avltree atree, *t;
+	t = &atree;
+	avlinit(t, NULL);
+
+
+	long tab[] = { 1, 2, 3};
+	const int TAB_SIZE = sizeof tab / sizeof(long);
+	long i;
+	for (i = 0; i < TAB_SIZE; ++i)
+		avlinsert(t, (void *)tab[i]);
+
+#define avlprint(POINTER) \
+	bin_tree_print((btnode *)(POINTER)->root, (avlrenderer))
+	
+	avlprint(t);
+
+#undef avlprint
+	
+	avlclear(t);
 }
 
 int main(int argc, char *argv[])
 {
 //	testList();
-	testTree();
+//	testTree();
+	testAVL();
 	exit(EXIT_SUCCESS);
 }

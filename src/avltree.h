@@ -2,13 +2,10 @@
 #define AVLTREE_H
 
 #include <stdlib.h>
-
+#include "common.h"
 
 typedef struct avl_tree_node avlnode;
 typedef struct avl_tree      avltree;
-typedef int (*comp_fun)(const void *ldata, const void *rdata);
-typedef void (*visitor_t)(avlnode *n);
-
 
 struct avl_tree_node {
 	avlnode *left, *right;
@@ -18,13 +15,15 @@ struct avl_tree_node {
 };
 
 
-struct alv_tree {
+struct avl_tree {
 	avlnode *root;	
 	comp_fun comp;
 	size_t size;
 	visitor_t visitor;
 };
 
+
+void avlrenderer(btnode *node, char *buf);
 
 void avlinit(avltree *t, comp_fun comp);
 
@@ -44,7 +43,7 @@ void avlprint(const avltree *t);
 void avlclear(avltree *t);
 
 
-void avldestroy(avlree *t);
+void avldestroy(avltree *t);
 
 
 static inline size_t avlsize(avltree *t)

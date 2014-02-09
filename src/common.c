@@ -31,12 +31,33 @@ int bin_tree_height(btnode *n)
 }
 
 
+void free_node(btnode *n, int destroy_data)
+{
+	if (destroy_data)
+		free(n->data);
+	free(n);
+}
+
+
+void free_node_only(btnode *n)
+{
+	free_node(n, 0);
+}
+
+
+void free_node_destroy(btnode *n)
+{
+	free_node(n, 1);
+}
+
+
 
 struct pair
 {
 	long value;
 	long order;
 	int left;
+	btnode *node;
 };
 
 /* n - aktualnie odwiedzany węzeł
@@ -53,13 +74,15 @@ void do_walk(btnode *n, int cur, int max, list *levels, int *cnt, int l)
 		pp->value = (long)n->data;
 		pp->order = (*cnt)++;
 		pp->left = l;
+		pp->node = n;
 		lpush_back(&levels[cur], pp);
 		/* printf("[%d] cnt:%ld  val:%ld\n", cur, pp->order, pp->value); */
 		do_walk(n->right, cur + 1, max, levels, cnt, 1);
 	}
 }
-
-void bin_tree_print(btnode *n)
+/* renderer to funkcja przyjmująca btnode* i zapisująca do char **
+ * to co powinno być wypisane w miejscu noda na diagramie drzewa */
+void bin_tree_print(btnode *n, void (*renderer)(btnode *, char *))
 {
 	int height = bin_tree_height(n);
 	if (height == 0)
@@ -75,21 +98,27 @@ void bin_tree_print(btnode *n)
 	l = 0;
 	do_walk(n, 0, height, levels, &l, 0);
 
+	const int BUF_SIZE = 30;
+	char buf[BUF_SIZE];
+
 	for (l = 0; l < height; ++l) {
 		lnode *n = levels[l].head;
 		long t = 0;
 		while (n) {
 			long order = ((struct pair *)n->data)->order;
 			order -= t;
-			int left = ((struct pair *)n->data)->left;
+//			int left = ((struct pair *)n->data)->left;
 			while (++t && order--) 
-				printf("  ");
-			
-			printf("%2ld", ((struct pair *)n->data)->value);
-			if (left == -1) {
-				printf("/ ");
-				++t;
-			}
+				printf("         ");
+			if (renderer) {
+				renderer((btnode *)(((struct pair *)n->data)->node), buf);
+				printf("%s", buf);
+			} else
+				printf("%2ld", ((struct pair *)n->data)->value);
+			/* if (left == -1) { */
+			/* 	printf("/ "); */
+			/* 	++t; */
+			/* } */
 			n = n->next;
 		}
 		printf("\n");
