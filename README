@@ -1,4 +1,8 @@
 ccontainers
 ===========
 
-implementation of some of c++ standard containers in c
+implementation of some of standard containers in c:
+- double linked list
+- binary search tree (DSW balancing, AVL tree)
+
+
