@@ -83,7 +83,7 @@ void avldestroy(avltree *t)
 }
 
 
-void goup(avlnode *node)
+void compute_height(avlnode *node)
 {
 	while (node) {
 		int lh = -1, rh = -1;
@@ -92,12 +92,141 @@ void goup(avlnode *node)
 		if (node->right)
 			rh = node->right->height;
 		node->height = max(lh, rh) + 1;
-		node->balance = rh - lh;
 		/* printf("data: %ld\n", (long)node->data); */
-		node = node->parent;
+ 		node = node->parent;
 	}
 }
 
+int avltreeheight(avlnode *node)
+{
+	if (node) 
+		return 1 + max(avltreeheight(node->left),
+		               avltreeheight(node->right));
+	return 0;
+}
+
+/* iterating the tree in Left Vist Right order */
+avlnode *avl_lvr(avliter *prev)
+{
+	
+}
+
+/* checks if abs(height(left) - height(right)) < 2
+ * i.e. if this subtree is AVL tree
+ */
+int checkavltree(avlnode *n)
+{
+	
+	return 0;
+}
+
+static inline int isleftchild(avlnode *n)
+{
+	return (n->parent->left == n);
+}
+
+static void reparent(avlnode *old_root, avlnode *new_root, avltree *t)
+{
+	if (old_root->parent) {
+		if (isleftchild(old_root))
+			old_root->parent->left = new_root;
+		else
+			old_root->parent->right = new_root;
+	} else
+		t->root = new_root;
+	new_root->parent = old_root->parent;
+	old_root->parent = new_root;
+}
+
+avlnode *avlrotater(avlnode *old_root, avltree *t)
+{
+	avlnode *new_root = old_root->left;
+	if (new_root != NULL) {
+		old_root->left = new_root->right;
+		if (new_root->right)
+			new_root->parent = old_root;
+		new_root->right = old_root;
+		reparent(old_root, new_root, t);
+	}
+	return new_root;
+}
+
+
+avlnode *avlrotatel(avlnode *old_root, avltree *t)
+{
+	avlnode *new_root = old_root->right;
+	if (new_root != NULL) {
+		old_root->right = new_root->left;
+		if (new_root->left)
+			new_root->parent = old_root;
+		new_root->left = old_root;
+		reparent(old_root, new_root, t);
+	}
+	return new_root;
+}
+
+
+void rebalance(avlnode *node, avltree *t)
+{
+	avlnode *child = (node->balance > 0) ? node->right : node->left;
+	int same_sign = node->balance * child->balance;
+	printf("[%2ld] imba, ", (long)node->data);
+	if (same_sign > 0) {				   /* one rotation only */
+		printf("same signs\n");
+		if (node->balance > 0)
+			avlrotatel(node, t);
+		else
+			avlrotater(node, t);
+		node->balance = child->balance = 0;
+	} else {
+		printf("diff signs\n");
+		avlnode *grand_child = (child->balance > 0) ?
+			child->right : child->left;
+		if (node->balance > 0) {
+			avlrotater(child, t);
+			avlrotatel(node, t);
+		} else {
+			avlrotatel(child, t);
+			avlrotater(node, t);
+		}
+		node->balance = -1;
+		child->balance = 0;
+		grand_child->balance = 0;
+	}
+	
+	/* if (n->balance > 0) */
+
+}
+
+
+avlnode *compute_balance(avlnode *added)
+{
+	avlnode *node = added;
+	node->balance = 0;
+	if (node->parent != NULL) {
+		if (node->parent->left == NULL || node->parent->right == NULL) {
+			/* First (and only) child */
+			do {
+				if (node->parent->left == node)
+					--node->parent->balance;
+				else
+					++node->parent->balance;
+				if (node->parent->balance == 0)
+					break;
+				if (abs(node->parent->balance) == 2) 
+					return node->parent;
+				node = node->parent;
+			} while (node->parent != NULL);
+		} else {
+			/* got one sibling. Assuming there cannot be -2/2 balace
+			 * i can safely set parent balance to 0
+			 * (because it can only be -1/1)
+			 */
+			node->parent->balance = 0;
+		}
+	}
+	return NULL;
+}
 
 /* cmp zwraca wynik ostatniego użycia funkcji comp
  * funkcja lower powinna zwracać 1 gdy dana jest mniejsza
@@ -139,7 +268,10 @@ avlnode *avlinsert(avltree *t, void *data)
 		else
 			parent = NULL; 		/* root */
 		n->parent = parent;
-		goup(n);
+		avlnode *imba = compute_balance(n);
+		if (imba)
+			rebalance(imba, t);
+		/* compute_height(n); */
 		++t->size;
 		errno = 0;
 	} else {  /* próba wstawienia istniejącej wartości */
@@ -213,29 +345,4 @@ avlnode *avlfind(avltree *t, void *data)
 	return *avlsrch_node(t, data, NULL);
 }
 
-
-/* btnode *btrotater(btnode **n) */
-/* { */
-/* 	btnode *newRoot = NULL; */
-/* 	if ((*n) != NULL && (*n)->left != NULL) { */
-/* 		newRoot = (*n)->left; */
-/* 		(*n)->left = newRoot->right; */
-/* 		newRoot->right = *n; */
-/* 		*n = newRoot; */
-/* 	} */
-/* 	return newRoot; */
-/* } */
-
-
-/* btnode *btrotatel(btnode **n) */
-/* { */
-/* 	btnode *newRoot = NULL; */
-/* 	if ((*n) != NULL && (*n)->right != NULL) { */
-/* 		newRoot = (*n)->right; */
-/* 		(*n)->right = newRoot->left; */
-/* 		newRoot->left = *n; */
-/* 		*n = newRoot; */
-/* 	} */
-/* 	return newRoot; */
-/* } */
 

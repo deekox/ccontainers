@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include "common.h"
 
-typedef struct avl_tree_node avlnode;
-typedef struct avl_tree      avltree;
+typedef struct avl_tree_node     avlnode;
+typedef struct avl_tree_iterator avliterator;
+typedef struct avl_tree          avltree;
 
 struct avl_tree_node {
 	avlnode *left, *right;
@@ -15,6 +16,19 @@ struct avl_tree_node {
 	short balance;
 };
 
+struct avl_tree_iterator {
+	avlnode *node;
+	enum last_move {
+		AVL_MOV_NONE,
+		AVL_MOV_LEFT,
+		AVL_MOV_RIGHT,
+		AVL_MOV_UP
+	} move;
+	enum direction {
+		AVL_DIR_FORWARD,
+		AVL_DIR_BACKWARD
+	} dir;
+};
 
 struct avl_tree {
 	avlnode *root;	
@@ -27,6 +41,9 @@ struct avl_tree {
 void avlrenderer(btnode *node, char *buf);
 
 void avlinit(avltree *t, comp_fun comp);
+
+
+void avlbegin(avltree *t, avliterator *it);
 
 
 avlnode *avlinsert(avltree *t, void *data);
@@ -57,10 +74,5 @@ static inline int avlempty(avltree *t)
 {
 	return t->root == NULL;
 }
-
-
-avlnode *avlrotater(avlnode **n);
-
-avlnode *avlrotatel(avlnode **n);
 
 #endif /* BTREE_H */

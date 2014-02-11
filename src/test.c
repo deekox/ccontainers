@@ -293,25 +293,27 @@ int testList()
 
 void testAVL()
 {
+
+#define avlprint(POINTER) \
+	bin_tree_print((btnode *)(POINTER)->root, (avlrenderer))
+
 	avltree atree, *t;
 	t = &atree;
 	avlinit(t, NULL);
 
-
 	long tab[] = { 3, 5, 1,9, 0, 7,8,6};
+//	long tab[] = { 3, 5, 10};
 	const int TAB_SIZE = sizeof tab / sizeof(long);
 	long i;
-	for (i = 0; i < TAB_SIZE; ++i)
+	for (i = 0; i < TAB_SIZE; ++i) {
 		avlinsert(t, (void *)tab[i]);
-
-#define avlprint(POINTER) \
-	bin_tree_print((btnode *)(POINTER)->root, (avlrenderer))
-	
-	avlprint(t);
-
-#undef avlprint
+		avlprint(t);
+		printf("\n");
+	}
 	
 	avlclear(t);
+	
+#undef avlprint
 }
 
 int main(int argc, char *argv[])
