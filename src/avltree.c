@@ -106,9 +106,9 @@ int avltreeheight(avlnode *node)
 }
 
 /* iterating the tree in Left Vist Right order */
-avlnode *avl_lvr(avliter *prev)
+avlnode *avl_lvr(avliterator *prev)
 {
-	
+	return NULL;
 }
 
 /* checks if abs(height(left) - height(right)) < 2
