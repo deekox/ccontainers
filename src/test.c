@@ -298,7 +298,7 @@ void testAVL()
 	avlinit(t, NULL);
 
 
-	long tab[] = { 1, 2, 3};
+	long tab[] = { 3, 5, 1,9, 0, 7,8,6};
 	const int TAB_SIZE = sizeof tab / sizeof(long);
 	long i;
 	for (i = 0; i < TAB_SIZE; ++i)

@@ -16,6 +16,7 @@ static avlnode *alloc_node(void *data)
 	n->left = n->right = n->parent = NULL;
 	n->data = data;
 	n->height = -1;
+	n->balance = 0;
 	return n;
 }
 
@@ -26,11 +27,8 @@ void avlrenderer(btnode *node, char *buf)
 	int i;
 	for (i = 0; i < 10; ++i)
 		buf[i] = ' ';
-	if (n->parent)
-		snprintf(buf, 11, "(%2ld %2ld %2ld)",
-		         (long)n->data, (long)n->height, (long)n->parent->data);
-	else
-		snprintf(buf, 11, "(%2ld %2ld NL)", (long)n->data, (long)n->height);
+	snprintf(buf, 11, "(%2ld %2ld %2ld)",
+	         (long)n->data, (long)n->height, (long)n->balance);
 	buf[10] = '\0';
 
 	/* if (n->parent) */
@@ -94,6 +92,7 @@ void goup(avlnode *node)
 		if (node->right)
 			rh = node->right->height;
 		node->height = max(lh, rh) + 1;
+		node->balance = rh - lh;
 		/* printf("data: %ld\n", (long)node->data); */
 		node = node->parent;
 	}

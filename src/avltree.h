@@ -12,6 +12,7 @@ struct avl_tree_node {
 	void *data;
 	avlnode *parent;
 	int height;
+	short balance;
 };
 
 
