@@ -309,6 +309,7 @@ void testAVL()
 		avlinsert(t, (void *)tab[i]);
 		avlprint(t);
 		printf("\n");
+		printf("\n");		
 	}
 	
 	avlclear(t);

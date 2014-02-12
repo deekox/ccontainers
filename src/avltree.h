@@ -20,9 +20,10 @@ struct avl_tree_iterator {
 	avlnode *node;
 	enum last_move {
 		AVL_MOV_NONE,
-		AVL_MOV_LEFT,
+		AVL_MOV_LEFT_EDGE,
 		AVL_MOV_RIGHT,
-		AVL_MOV_UP
+		AVL_MOV_BACK_DIRECT,
+		AVL_MOV_BACK_SKIP
 	} move;
 	enum direction {
 		AVL_DIR_FORWARD,
@@ -43,7 +44,7 @@ void avlrenderer(btnode *node, char *buf);
 void avlinit(avltree *t, comp_fun comp);
 
 
-void avlbegin(avltree *t, avliterator *it);
+avliterator *avlbegin(avltree *t, avliterator *it);
 
 
 avlnode *avlinsert(avltree *t, void *data);

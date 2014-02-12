@@ -17,9 +17,8 @@ static avlnode *alloc_node(void *data)
 	n->data = data;
 	n->height = -1;
 	n->balance = 0;
-	return n;
+ 	return n;
 }
-
 
 void avlrenderer(btnode *node, char *buf)
 {
@@ -82,20 +81,90 @@ void avldestroy(avltree *t)
 	do_clear(t);
 }
 
-
-void compute_height(avlnode *node)
+/* try to go to the left edge */
+avlnode *avl_try_LE(avlnode *n)
 {
-	while (node) {
-		int lh = -1, rh = -1;
-		if (node->left)
-			lh = node->left->height;
-		if (node->right)
-			rh = node->right->height;
-		node->height = max(lh, rh) + 1;
-		/* printf("data: %ld\n", (long)node->data); */
- 		node = node->parent;
-	}
+	while (n->left)
+		n = n->left;
+	return n;
 }
+
+/* try to go to right node and then go to left edge */
+avlnode *avl_try_RLE(avlnode *n)
+{
+	if (n->right) {
+		if (n->right->left)
+			return avl_try_LE(n->right);
+	}
+	return n;
+}
+
+/* try to go to right node */
+avlnode *avl_try_R(avlnode *n)
+{
+	return (n->right) ? n->right : n;
+}
+
+/* try to go to the direct parent */
+avlnode *avl_try_back_direct(avlnode *n)
+{
+	return (n->parent) ? n->parent : n;
+}
+
+
+static inline int isleftchild(avlnode *n)
+{
+	return (n->parent->left == n);
+}
+
+/* search for the first ancestor such that node n is its left descendant,
+ * but skip first parent
+ */
+avlnode *avl_try_back_skip(avlnode *n)
+{
+	avlnode *org = n;
+
+	if (n->parent) {
+		n = n->parent;			/* skipping first ancestor */
+		while (n->parent) {
+			if (isleftchild(n))
+				return n->parent;
+			n = n->parent;
+		}
+	}
+	return org;
+}
+
+
+avliterator *avlbegin(avltree *t, avliterator *it)
+{
+	it->dir = AVL_DIR_FORWARD;
+	it->node = t->root;
+	if (it->node == NULL)
+		return NULL;
+
+	/* avlnode *tmp = gotoleftedge(it->node); */
+	/* if (it->node != tmp) { */
+	/* 	it->node = tmp; */
+	/* 	it->move = AVL_MOV_LEFT_EDGE; */
+	/* } else */
+	/* 	it->move = AVL_MOV_BACK_DIRECT; */
+	/* return it; */
+	return NULL;
+}
+
+
+avliterator *avlitnext(avliterator *it)
+{
+	if (it->node == NULL)
+		return NULL;
+
+	/* switch (it->move) { */
+	/* case AVL_MOVE_LEFT: */
+	/* } */
+	return NULL;
+}
+
 
 int avltreeheight(avlnode *node)
 {
@@ -105,11 +174,13 @@ int avltreeheight(avlnode *node)
 	return 0;
 }
 
+
 /* iterating the tree in Left Vist Right order */
 avlnode *avl_lvr(avliterator *prev)
 {
 	return NULL;
 }
+
 
 /* checks if abs(height(left) - height(right)) < 2
  * i.e. if this subtree is AVL tree
@@ -120,10 +191,6 @@ int checkavltree(avlnode *n)
 	return 0;
 }
 
-static inline int isleftchild(avlnode *n)
-{
-	return (n->parent->left == n);
-}
 
 static void reparent(avlnode *old_root, avlnode *new_root, avltree *t)
 {
@@ -189,7 +256,8 @@ void rebalance(avlnode *node, avltree *t)
 			avlrotatel(child, t);
 			avlrotater(node, t);
 		}
-		node->balance = -1;
+		/* TODO: te balanse mogą być błędne: przetestować */
+		node->balance = 0;
 		child->balance = 0;
 		grand_child->balance = 0;
 	}
@@ -269,8 +337,10 @@ avlnode *avlinsert(avltree *t, void *data)
 			parent = NULL; 		/* root */
 		n->parent = parent;
 		avlnode *imba = compute_balance(n);
-		if (imba)
+		if (imba) {
+			printf("inserting: %2ld  ", (long)data);
 			rebalance(imba, t);
+		}
 		/* compute_height(n); */
 		++t->size;
 		errno = 0;
