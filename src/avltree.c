@@ -143,14 +143,13 @@ avliterator *avlbegin(avltree *t, avliterator *it)
 	if (it->node == NULL)
 		return NULL;
 
-	/* avlnode *tmp = gotoleftedge(it->node); */
-	/* if (it->node != tmp) { */
-	/* 	it->node = tmp; */
-	/* 	it->move = AVL_MOV_LEFT_EDGE; */
-	/* } else */
-	/* 	it->move = AVL_MOV_BACK_DIRECT; */
-	/* return it; */
-	return NULL;
+	avlnode *tmp = gotoleftedge(it->node);
+	if (it->node != tmp) {
+		it->node = tmp;
+		it->move = AVL_MOV_LEFT_EDGE;
+	} else
+		it->move = AVL_MOV_BACK_DIRECT;
+	return it;
 }
 
 
@@ -158,8 +157,7 @@ avliterator *avlitnext(avliterator *it)
 {
 	if (it->node == NULL)
 		return NULL;
-
-	/* switch (it->move) { */
+	switch (it->move) {
 	/* case AVL_MOVE_LEFT: */
 	/* } */
 	return NULL;
