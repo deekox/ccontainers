@@ -4,8 +4,6 @@
 #include <errno.h>
 #include <assert.h>
 
-
-
 #include "avltree.h"
 #include "list.h"
 
@@ -159,7 +157,7 @@ avliterator *avlitnext(avliterator *it)
 {
 	if (it->node == NULL)
 		return NULL;
-	switch (it->move) {
+	/* switch (it->move) { */
 	/* case AVL_MOVE_LEFT: */
 	/* } */
 	return NULL;
