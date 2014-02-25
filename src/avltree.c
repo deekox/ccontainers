@@ -140,15 +140,19 @@ avliterator *avlbegin(avltree *t, avliterator *it)
 {
 	it->dir = AVL_DIR_FORWARD;
 	it->node = t->root;
-	if (it->node == NULL)
+	if (it->node == NULL) {
+		it->move = AVL_MOV_NONE;
 		return NULL;
+	}
 
-	avlnode *tmp = gotoleftedge(it->node);
+	avlnode *tmp = avl_try_LE(it->node);
 	if (it->node != tmp) {
 		it->node = tmp;
 		it->move = AVL_MOV_LEFT_EDGE;
 	} else
-		it->move = AVL_MOV_BACK_DIRECT;
+		it->move = AVL_MOV_BACK_SKIP;
+	/* if we can't go left we should return root
+	 * which is the current it*/
 	return it;
 }
 
@@ -157,10 +161,69 @@ avliterator *avlitnext(avliterator *it)
 {
 	if (it->node == NULL)
 		return NULL;
-	/* switch (it->move) { */
-	/* case AVL_MOVE_LEFT: */
-	/* } */
+
+	avlnode *tmp = avl_try_RLE(it->node);
+	if (tmp != it->node) {
+		it->node = tmp;
+		it->move = AVL_MOV_LEFT_EDGE;
+		return it;
+	}
+
+	tmp = avl_try_R(it->node);
+	if (tmp != it->node) {
+		it->node = tmp;
+		it->move = AVL_MOV_RIGHT;
+		return it;
+	}
+
+	/* we are at the right leaf of subtree */
+	if (it->move == AVL_MOV_RIGHT) {
+		tmp = avl_try_back_skip(it->node);
+		if (tmp != it->node) {
+			it->node = tmp;
+			it->move = AVL_MOV_BACK_SKIP;
+			return it;
+		}
+		else
+			goto exit_clear;
+	}
+
+	tmp = avl_try_back_direct(it->node);
+	if (tmp != it->node) {
+		it->node = tmp;
+		it->move = AVL_MOV_BACK_DIRECT;
+		return it;
+	}
+
+exit_clear:
+	it->node = NULL;
+	it->move = AVL_MOV_NONE;
 	return NULL;
+}
+
+
+void avlitdesc(avliterator *it)
+{
+	if (it == NULL) 
+		printf("it == NULL\n");
+	else {
+		printf("->%ld ", (long)it->node->data);
+		switch (it->move) {
+		case AVL_MOV_NONE:
+			printf("NONE"); break;
+		case AVL_MOV_LEFT_EDGE:
+			printf("LE"); break;
+		case AVL_MOV_RIGHT:
+			printf("RIGHT"); break;
+		case AVL_MOV_BACK_DIRECT:
+			printf("BACK_DIRECT"); break;
+		case AVL_MOV_BACK_SKIP:
+			printf("BACK_SKIP"); break;
+		default:
+			printf("unknown"); break;
+		}
+		printf("\n");
+	}
 }
 
 

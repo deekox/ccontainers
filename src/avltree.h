@@ -47,6 +47,10 @@ void avlinit(avltree *t, comp_fun comp);
 avliterator *avlbegin(avltree *t, avliterator *it);
 
 
+avliterator *avlitnext(avliterator *it);
+
+void avlitdesc(avliterator *it);
+
 avlnode *avlinsert(avltree *t, void *data);
 
 

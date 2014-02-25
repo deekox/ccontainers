@@ -311,6 +311,17 @@ void testAVL()
 		printf("\n");
 		printf("\n");		
 	}
+
+	int wd = 30;
+	printf("\n\nIteration\n");
+	avliterator it;
+	if (avlbegin(t, &it)) {
+		avlitdesc(&it);
+		while (avlitnext(&it) && --wd)
+			avlitdesc(&it);
+	}
+	printf("\n\n");
+	       
 	
 	avlclear(t);
 	
