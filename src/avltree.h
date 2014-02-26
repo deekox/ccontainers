@@ -41,6 +41,11 @@ struct avl_tree {
 
 void avlrenderer(btnode *node, char *buf);
 
+static inline void avlprint(avltree *t)
+{
+	bin_tree_print((btnode *)t->root, (avlrenderer));
+}
+
 void avlinit(avltree *t, comp_fun comp);
 
 
@@ -58,9 +63,6 @@ void *avlerase(avltree *t, void *data);
 
 
 avlnode *avlfind(avltree *t, void *data);
-
-
-void avlprint(const avltree *t);
 
 
 void avlclear(avltree *t);

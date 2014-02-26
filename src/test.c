@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 #include "avltree.h"
 #include "list.h"
 
@@ -291,12 +292,8 @@ int testList()
 /* 		printf("%ld: %ld\n", i, (long)v2t_DSW_FullSize(i)); */
 /* } */
 
-void testAVL()
-{
-
-#define avlprint(POINTER) \
-	bin_tree_print((btnode *)(POINTER)->root, (avlrenderer))
-
+void testAVL(long size)
+{	
 	avltree atree, *t;
 	t = &atree;
 	avlinit(t, NULL);
@@ -312,12 +309,12 @@ void testAVL()
 		printf("\n");		
 	}
 
-	int wd = 30;
+
 	printf("\n\nIteration\n");
 	avliterator it;
 	if (avlbegin(t, &it)) {
 		avlitdesc(&it);
-		while (avlitnext(&it) && --wd)
+		while (avlitnext(&it))
 			avlitdesc(&it);
 	}
 	printf("\n\n");
@@ -325,13 +322,105 @@ void testAVL()
 	
 	avlclear(t);
 	
-#undef avlprint
+
+}
+
+void insert_unique_random(avltree *t, long size, list *insertorder)
+{
+	long *tab = malloc(size * sizeof(long));
+
+	long i;
+	for (i = 0; i < size; ++i)
+		tab[i] = i;
+	while (size) {
+		long r = ((long)rand() << 32) | rand();
+		r %= size;
+		/* printf("%ld ", tab[r]); */
+		avlinsert(t, (void *)tab[r]);
+		if (insertorder)
+			lpush_back(insertorder, (void *)tab[r]);
+		tab[r] = tab[size - 1];
+		--size;
+	}
+	/* putchar('\n'); */
+		
+	free(tab);
+}
+
+int avlittest(avltree *t, long size, long repeat, list *insertorder)
+{
+	long i;
+	for (i = 0; i < repeat; ++i) {
+		insert_unique_random(t, size, insertorder);
+		avliterator it;
+	
+		long expected = 0;
+		if (avlbegin(t, &it)) {
+			if ((long)it.node->data != expected) {
+				fprintf(stderr, "%ld %ld\n",
+				        expected, (long)it.node->data);
+				return 0;
+			}
+			/* avlitdesc(&it); */
+			while (avlitnext(&it)) {
+				++expected;
+				if ((long)it.node->data != expected) {
+					fprintf(stderr, "%ld %ld\n",
+					        expected, (long)it.node->data);
+					return 0;
+				}
+			}
+		}
+	}
+	return 1;
+}
+
+void avlwalk(avltree *t)
+{
+	/* chciał bym  by iteratory działały tak: */
+	/* for (iter i = begin(); i != end(); it.next()) */
+	/* 	; */
+	
+	avlprint(t);
+	avliterator it;
+	if (avlbegin(t, &it)) {
+		avlitdesc(&it);
+		while (avlitnext(&it))
+			avlitdesc(&it);
+	}
+}
+
+void avlinsertarray(avltree *t, long * ar, size_t size)
+{
+	int i;
+	for (i = 0; i < size; ++i)
+		avlinsert(t, (void *)ar[i]);
 }
 
 int main(int argc, char *argv[])
 {
+	srand(time(NULL));
+
+	avltree avlt, *t;
+
+	t = &avlt;
+	avlinit(t, NULL);
+	insert_unique_random(t, 10, NULL);
+	/* avlcheckbalance(t); */
+	/* long tab[10] = { 7,3,5,8,6,9,1,0,2,4 }; */
+	/* avlinsertarray(t, tab, 10); */
+	/* avlwalk(t); */
+
+	list insertorder;
+	linit(&insertorder);
+	
+	if (!avlittest(t, 10, 1, &insertorder))
+		fprintf(stderr, "avlittest failed\n");
+
+	
 //	testList();
 //	testTree();
-	testAVL();
+//	testAVL(1000);
 	exit(EXIT_SUCCESS);
 }
+
