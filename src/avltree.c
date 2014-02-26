@@ -176,26 +176,29 @@ avliterator *avlitnext(avliterator *it)
 		return it;
 	}
 
-	/* we are at the right leaf of subtree */
-	if (it->move == AVL_MOV_RIGHT) {
-		tmp = avl_try_back_skip(it->node);
-		if (tmp != it->node) {
-			it->node = tmp;
-			it->move = AVL_MOV_BACK_SKIP;
-			return it;
+
+	/* we have to go back
+	 * if current node is left node then back_direct
+	 * else back_skip */
+
+	if (it->node->parent) {
+		if (isleftchild(it->node)) {
+			tmp = avl_try_back_direct(it->node);
+			if (tmp != it->node) {
+				it->node = tmp;
+				it->move = AVL_MOV_BACK_DIRECT;
+				return it;
+			}
+		} else {
+			tmp = avl_try_back_skip(it->node);
+			if (tmp != it->node) {
+				it->node = tmp;
+				it->move = AVL_MOV_BACK_SKIP;
+				return it;
+			}
 		}
-		else
-			goto exit_clear;
 	}
 
-	tmp = avl_try_back_direct(it->node);
-	if (tmp != it->node) {
-		it->node = tmp;
-		it->move = AVL_MOV_BACK_DIRECT;
-		return it;
-	}
-
-exit_clear:
 	it->node = NULL;
 	it->move = AVL_MOV_NONE;
 	return NULL;
