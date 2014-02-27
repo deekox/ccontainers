@@ -539,6 +539,8 @@ avlnode *avlinsert(avltree *t, void *data)
 
 void *avlerase(avltree *t, void *data)
 {
+
+	
 	int cmp; 		
 	avlnode **place = avlsrch_node(t, data, &cmp);
 	if (*place != NULL) {
