@@ -325,7 +325,7 @@ void testAVL(long size)
 
 }
 
-void insert_unique_random(avltree *t, long size, list *insertorder)
+int insert_unique_random(avltree *t, long size, list *insertorder)
 {
 	long *tab = malloc(size * sizeof(long));
 
@@ -336,15 +336,18 @@ void insert_unique_random(avltree *t, long size, list *insertorder)
 		long r = ((long)rand() << 32) | rand();
 		r %= size;
 		/* printf("%ld ", tab[r]); */
-		avlinsert(t, (void *)tab[r]);
+		
 		if (insertorder)
 			lpush_back(insertorder, (void *)tab[r]);
+		if (avlinsert(t, (void *)tab[r]) == NULL)
+			return 0;
 		tab[r] = tab[size - 1];
 		--size;
 	}
 	/* putchar('\n'); */
 		
 	free(tab);
+	return 1;
 }
 
 int avlittest(avltree *t, long size, long repeat, list *insertorder)
@@ -402,13 +405,29 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 
 	avltree avlt, *t;
+	list order;
+	linit(&order);
 
 	t = &avlt;
 	avlinit(t, NULL);
-	insert_unique_random(t, 10, NULL);
+	int rv;
+	while ((rv = insert_unique_random(t, 1000, &order))) {
+		avlclear(t);
+		lclear(&order);
+	}
+
+	lnode *pn = order.head;
+	printf("order:\n");
+	while (pn) {
+		printf("%ld ", (long)pn->data);
+		pn = pn->next;
+	}
+	putchar('\n');
+	exit(1);
+	
 	/* avlcheckbalance(t); */
-	/* long tab[10] = { 7,3,5,8,6,9,1,0,2,4 }; */
-	/* avlinsertarray(t, tab, 10); */
+	/* long tab[] = { 8, 3, 9, 0, 5, 2, 1, 4, 7, 6 }; */
+	/* avlinsertarray(t, tab, sizeof tab / sizeof(long)); */
 	/* avlwalk(t); */
 
 	list insertorder;

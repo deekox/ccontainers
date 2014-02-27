@@ -378,18 +378,19 @@ void rebalance(avlnode *node, avltree *t)
 	int same_sign = node->balance * child->balance;
 	/* printf("[%2ld] imba, ", (long)node->data); */
 	if (same_sign > 0) {				   /* one rotation only */
-		printf("\n");
+		/* printf("\n"); */
 		/* avlprint(t); */
-		printf("same signs\n");
+		/* printf("same signs\n"); */
 		if (node->balance > 0)
 			avlrotatel(node, t);
 		else
 			avlrotater(node, t);
 		node->balance = child->balance = 0;
 	} else {
-		printf("diff signs\n");
+		/* printf("diff signs\n"); */
 		avlnode *grand_child = (child->balance > 0) ?
 			child->right : child->left;
+		assert(grand_child);
 		if (node->balance > 0) {
 			avlrotater(child, t);
 			avlrotatel(node, t);
@@ -397,9 +398,38 @@ void rebalance(avlnode *node, avltree *t)
 			avlrotatel(child, t);
 			avlrotater(node, t);
 		}
+
+		if (grand_child->balance) {
+			if (grand_child->balance * node->balance < 0)
+				node->balance = 0;
+			else
+				node->balance /= -2;
+		} else {
+			/* node->balance /= -2; */
+			node->balance = 0;
+		}
+		
+		
+		if (grand_child->balance) {
+			if (grand_child->balance * child->balance > 0)
+				child->balance *= -1;
+			else
+				child->balance = 0;
+		} else {
+			child->balance = 0;
+		}
+		
+		/* if (!!child->left  ^ !!child->right)  */
+		/* 	child->balance = child->left ? -1 : 1; */
+		/* else */
+		/* 	child->balance = 0; */
+		
+		/* if (abs(node->balance) > 1) */
+		/* 	fprintf(stderr, "[%ld]BAL: %d\n", (long)node->data, node->balance); */
 		/* TODO: te balanse mogą być błędne: przetestować */
-		node->balance = 0;
-		child->balance = 0;
+		
+		/* node->balance = 0; */
+		/* child->balance = 0; */
 		grand_child->balance = 0;
 	}
 	
@@ -464,8 +494,9 @@ avlnode *avlinsert(avltree *t, void *data)
 {
 	int cmp;
 	avlnode **place = avlsrch_node(t, data, &cmp);
+	avlnode *n = NULL;
 	if (*place == NULL) {
-		avlnode *n = alloc_node(data);
+		n = alloc_node(data);
 		if (n == NULL)
 			return NULL;
 		*place = n;
@@ -478,25 +509,30 @@ avlnode *avlinsert(avltree *t, void *data)
 			parent = NULL; 		/* root */
 		n->parent = parent;
 		avlnode *imba = compute_balance(n);
-		printf("%2ld\n ", (long)data);
+		/* printf("%2ld\n ", (long)data); */
 		if (imba) {
-			printf("------- before rebalance ----------------\n");
-			avlprint(t);
+			/* printf("------- before rebalance ----------------\n"); */
+			/* avlprint(t); */
 			rebalance(imba, t);
+			/* rebalance can change *place to NULL */
+			/* *place = n; */
 		}
 		/* compute_height(n); */
 		++t->size;
 
-		if (!avlparenttest(t->root))
+		if (!avlcheckbalance(t) || !avlparenttest(t->root)) {
+			if (!avlcheckbalance(t)) 
+				fprintf(stderr, "\n!avlceckbalance()\n");
+			if (!avlparenttest(t->root)) 
+				fprintf(stderr, "\n!avlparenttest()\n");
 			avlprint(t);
-		avlcheckbalance(t);
-		avlprint(t);
-		
+			return NULL;
+		}
 		errno = 0;
 	} else {  /* próba wstawienia istniejącej wartości */
 		errno = EEXIST;
 	}
-	return *place;
+	return n;
 }
 
 
