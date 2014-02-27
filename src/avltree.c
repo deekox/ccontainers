@@ -189,7 +189,7 @@ btnode *btrotater(btnode **n)
 	return newRoot;
 }
 
-
+/* test */
 btnode *btrotatel(btnode **n)
 {
 	btnode *newRoot = NULL;
