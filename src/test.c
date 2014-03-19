@@ -410,6 +410,12 @@ int main(int argc, char *argv[])
 
 	t = &avlt;
 	avlinit(t, NULL);
+
+	insert_unique_random(t, 10, NULL);
+	
+	
+		
+	
 	int rv;
 	while ((rv = insert_unique_random(t, 1000, &order))) {
 		avlclear(t);
