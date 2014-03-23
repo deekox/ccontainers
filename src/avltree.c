@@ -568,11 +568,9 @@ avlnode *avlinsert(avltree *t, void *data)
 /* TODO: removing alternately from left/right subtree */
 void *avlerase(avltree *t, void *data)
 {
-	static char dir = 0; 		/* direction edge search */
-	int cmp; 		
-	avlnode **holder = avlsrch_node(t, data, &cmp);
+	avlnode **holder = avlsrch_node(t, data, NULL);
 	if (*holder != NULL) {
-		avlnode *erased = *holder, dirty;
+		avlnode *erased = *holder, *dirty = NULL;
 		void *data = (*holder)->data;
 		
 		
