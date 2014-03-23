@@ -7,6 +7,32 @@
 #include "avltree.h"
 #include "list.h"
 
+enum operation {
+	INSERT,
+	ERASE
+};
+
+
+static inline int isleftchild(const avlnode *n)
+{
+	assert(n);
+	assert(n->parent);
+	return (n->parent->left == n);
+}
+
+static inline int isaleaf(const avlnode *n)
+{
+	assert(n);
+	return !(n->left || n->right);
+}
+
+static avlnode *sibling(const avlnode *n)
+{
+	assert(n);
+	if (n->parent)
+		return isleftchild(n) ? n->parent->right : n->parent->left;
+	return NULL;
+}
 
 
 static avlnode *alloc_node(void *data)
@@ -188,10 +214,6 @@ avlnode *avl_try_back_direct(avlnode *n)
 }
 
 
-static inline int isleftchild(avlnode *n)
-{
-	return (n->parent->left == n);
-}
 
 /* search for the first ancestor such that node n is its left descendant,
  * but skip first parent
@@ -426,10 +448,6 @@ void rebalance(avlnode *node, avltree *t)
 		
 		/* if (abs(node->balance) > 1) */
 		/* 	fprintf(stderr, "[%ld]BAL: %d\n", (long)node->data, node->balance); */
-		/* TODO: te balanse mogą być błędne: przetestować */
-		
-		/* node->balance = 0; */
-		/* child->balance = 0; */
 		grand_child->balance = 0;
 	}
 	
@@ -438,9 +456,9 @@ void rebalance(avlnode *node, avltree *t)
 }
 
 
-avlnode *compute_balance(avlnode *added)
+avlnode *compute_balance(avlnode *leaf, enum operation op)
 {
-	avlnode *node = added;
+	avlnode *node = leaf;
 	node->balance = 0;
 	if (node->parent != NULL) {
 		if (node->parent->left == NULL || node->parent->right == NULL) {
@@ -467,6 +485,12 @@ avlnode *compute_balance(avlnode *added)
 	return NULL;
 }
 
+
+/* f. returns address of poiter pointig to node containig data
+ * or (when node with data doesn't exist)
+ * address of poiter that should point to node with data if we were
+ * adding this node
+ * if cmp != NULL */
 /* cmp zwraca wynik ostatniego użycia funkcji comp
  * funkcja lower powinna zwracać 1 gdy dana jest mniejsza
  * cmp ==  1 zwracany jest: &parent->left
@@ -499,27 +523,26 @@ avlnode *avlinsert(avltree *t, void *data)
 		n = alloc_node(data);
 		if (n == NULL)
 			return NULL;
+		/* we return n rather than *place because
+		 * rebalance can change *place to NULL
+		 */
 		*place = n;
-		avlnode *parent;
 		if (cmp > 0)  			/* place wskazuje na &parent->left */
-			parent = (avlnode *)place;
+			n->parent = (avlnode *)place;
 		else if (cmp < 0) 	/* place = &parent->right */
-			parent = (avlnode *)((void *)place - offsetof(avlnode, right));
+			n->parent = (avlnode *)((void *)place - offsetof(avlnode, right));
 		else
-			parent = NULL; 		/* root */
-		n->parent = parent;
-		avlnode *imba = compute_balance(n);
-		/* printf("%2ld\n ", (long)data); */
-		if (imba) {
-			/* printf("------- before rebalance ----------------\n"); */
-			/* avlprint(t); */
-			rebalance(imba, t);
-			/* rebalance can change *place to NULL */
-			/* *place = n; */
-		}
-		/* compute_height(n); */
-		++t->size;
+			n->parent = NULL; 		/* root */
 
+		/* first node on path from n to root with abs(balance) == 2 */
+		avlnode *imba = compute_balance(n, INSERT);
+		if (imba) 
+			rebalance(imba, t);
+		++t->size;
+		errno = 0;
+
+#ifdef TEST
+		compute_height(n);
 		if (!avlcheckbalance(t) || !avlparenttest(t->root)) {
 			if (!avlcheckbalance(t)) 
 				fprintf(stderr, "\n!avlceckbalance()\n");
@@ -528,69 +551,75 @@ avlnode *avlinsert(avltree *t, void *data)
 			avlprint(t);
 			return NULL;
 		}
-		errno = 0;
+#endif
 	} else {  /* próba wstawienia istniejącej wartości */
 		errno = EEXIST;
 	}
+	
 	return n;
 	
 }
 
 
+/* removing by copying
+ * To prevent invalidation of iterator pointing to previous (in order) node
+ * (which will be "copied" to place where erased node was) we have to
+ * do extra work (coping only key is too little). */
+/* TODO: removing alternately from left/right subtree */
 void *avlerase(avltree *t, void *data)
 {
-
-	
+	static char dir = 0; 		/* direction edge search */
 	int cmp; 		
-	avlnode **place = avlsrch_node(t, data, &cmp);
-	if (*place != NULL) {
-		avlnode *tmp = *place;
-		void *data = (*place)->data;
+	avlnode **holder = avlsrch_node(t, data, &cmp);
+	if (*holder != NULL) {
+		avlnode *erased = *holder, dirty;
+		void *data = (*holder)->data;
+		
+		
+		if (erased->right == NULL) {
+			*holder = erased->left;
+			erased->left->parent = erased->parent;
+		} else if (erased->left == NULL) {
+			*holder = erased->right;
+			erased->right->parent = erased->parent;
+		} else {					
+			avlnode *prev = erased->left; /* perv in sense of in order walking */
+			while (prev->right)
+				prev = prev->right;
 
-		/* no children or one child */
-		if ((*place)->right == NULL)
-			(*place) = (*place)->left;
-		else if ((*place)->left == NULL)
-			(*place) = (*place)->right;
-		/* two children */
-		else {
-			/* usuwanie przez łączenie */
-			/* btnode *n = (*place)->left; */
-			/* while (n->right != NULL)  */
-			/* 	n = n->right; */
-			/* n->right = (*place)->right; */
-			/* *place = (*place)->left; */
-
-			
-			/* usuwanie przez kopiowanie: w przeciwieństwie do delete by merge
-			 * nie powoduje wzrostu wysokości drzewa
-			 * kopiujemy klucz poprzednika do klucza usuwanego noda i
-			 * modyfikujemy rodzica poprzednika tak by pokazywał na dziecko
-			 * poprzednika. Samego poprzednika usuwamy */
-			avlnode *n = (*place)->left, *prev = *place;
-			while (n->right != NULL) {
-				prev = n;
-				n = n->right;
+			prev->right = erased->right;
+			prev->right->parent = prev;
+			if (prev->parent != erased) { /* prev is not erased's direct child */
+				prev->parent->right = prev->left;
+				if (prev->left)
+					prev->left->parent = prev->parent;
 			}
+			prev->left = erased->left;
+			prev->left->parent = prev;
 
-			/* 1 - skopiuj klucz poprzednika do klucza usuwanego noda */
-			(*place)->data = n->data;
-			/* 2 - rodzic poprzednika powinien wskazywać na jedyne (ewentualne)
-			 *     lewe dziecko poprzednika. Z założenia poprzednik jest prawym
-			 *     dzieckiem.
-			 */
-			
-			tmp = n; 			/* to n będzie usuwany */
-			/* Nieco inne zachowanie, gdy się okaże, że poprzednikiem jest
-			 * bezpośrednie dziecko usuwanego noda. Wówczas poprzednik jest
-			 * lewym dzieckiem.
-			 */
-			if (prev == *place)
-				(*place)->left = n->left;
-			else
-				prev->right = n->left;
+			prev->parent = erased->parent;
+			*holder = prev;
 		}
-		free_node_only((btnode *)tmp);			
+
+		free_node_only((btnode *)erased);
+
+		avlnode *imba = compute_balance(dirty, ERASE);
+		if (imba) {
+			/* rebalance(t, imba); */
+		}
+
+
+		/* en - erased node
+		 * if en is a leaf:
+		 *     if en is only leaf of its parent:
+		 *         parent's subtree --height
+		 *     else
+		 *         parent's subtree height isn't changed
+		 *         only parent's balance changes +-
+		 */
+
+		
+
 		--t->size;
 		return data;
 	}
@@ -602,5 +631,4 @@ avlnode *avlfind(avltree *t, void *data)
 {
 	return *avlsrch_node(t, data, NULL);
 }
-
 

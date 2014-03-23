@@ -411,8 +411,11 @@ int main(int argc, char *argv[])
 	t = &avlt;
 	avlinit(t, NULL);
 
+	/* te 3 linie spokojnie można wyjebać
+	 * (to się nazywa dokumentowanie kodu ;) */
 	insert_unique_random(t, 10, NULL);
-	
+	avlprint(t);
+	exit(0);
 	
 		
 	
