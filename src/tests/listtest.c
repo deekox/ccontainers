@@ -1,4 +1,4 @@
-#include "../src/list.h"
+#include "../../include/list.h"
 
 
 void printli(const list *l)

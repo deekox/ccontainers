@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "list.h"
+#include "../include/list.h"
 
 
 static lnode *alloc_list_node(void *data)

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include "btree.h"
+#include "../include/btree.h"
 /* #include "list.h"				 */
 
 
@@ -11,7 +11,7 @@ btnode *alloc_node(void *data)
 	btnode * n = malloc(sizeof(btnode));
 	if (!n) return NULL;
 	n->left = n->right = NULL;
-	n->data = data;
+	n->key = data;
 	return n;
 }
 
@@ -67,7 +67,7 @@ static btnode **btsrch_node(btree *t, void *data)
 	btnode **cur = &t->root;
 	int r;
 	while (*cur) {
-		r = t->comp(data, (*cur)->data);
+		r = t->comp(data, (*cur)->key);
 		if (r == 0) 
 			break;
 		cur = (r > 0) ? &((*cur)->left) : &((*cur)->right);
@@ -98,7 +98,7 @@ void *bterase(btree *t, void *data)
 	btnode **place = btsrch_node(t, data);
 	if (*place != NULL) {
 		btnode *tmp = *place;
-		void *data = (*place)->data;
+		void *data = (*place)->key;
 
 		/* no children or one child */
 		if ((*place)->right == NULL)
@@ -127,7 +127,7 @@ void *bterase(btree *t, void *data)
 			}
 
 			/* 1 - skopiuj klucz poprzednika do klucza usuwanego noda */
-			(*place)->data = n->data;
+			(*place)->key = n->key;
 			/* 2 - rodzic poprzednika powinien wskazywać na jedyne (ewentualne)
 			 *     lewe dziecko poprzednika. Z założenia poprzednik jest prawym
 			 *     dzieckiem.
@@ -202,7 +202,7 @@ void DSW_compression(btnode *root, int cnt)
 void vine_to_tree_Day(btree *t)
 {
 	btnode pseudo_root;
-	pseudo_root.data = 0;
+	pseudo_root.key = 0;
 	pseudo_root.left = NULL;
 	pseudo_root.right = t->root;
 
@@ -231,7 +231,7 @@ size_t v2t_DSW_FullSize(size_t size)
 void vine_to_tree_DSW(btree *t)
 {
 	btnode pseudo_root;
-	pseudo_root.data = 0;
+	pseudo_root.key = 0;
 	pseudo_root.left = NULL;
 	pseudo_root.right = t->root;
 

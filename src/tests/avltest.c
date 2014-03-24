@@ -2,8 +2,52 @@
 #include <stdio.h>
 #include <assert.h>
 #include "avltest.h"
-#include "avltree.h"
-#include "list.h"
+#include "../../include/avltree.h"
+#include "../../include/list.h"
+
+struct AVLError {
+	enum EKind {
+		ESuccess,
+		EParentChildMismatch, 
+		EParentChildSelf, /* left/right points to istelf */
+		ESize,
+		ERoot,  /* tree->root->parent != NULL */
+		EKey  /* wrong data returned */
+	} kind;
+	avlnode *node;
+	void *key;
+};
+
+void initAVLError(struct AVLError *e)
+{
+	e->kind = ESuccess;
+	e->node = NULL;
+	e->key = NULL;
+}
+
+
+static void printAVLError(struct AVLError *e)
+{
+#define PR_AVLE(er) case er: printf(#er); fflush(stdout); break;
+	switch (e->kind) {
+		PR_AVLE(ESuccess);
+	case EParentChildMismatch:
+		printf("EParentChildMismatch: ");
+		fflush(stdout);
+		printf("P(%ld)[%p]_PL[%p]_RC[%p] ",
+		       (long)e->key, e->node, e->node->left, e->node->right);
+		if (e->node->left && e->node->left != e->node->left->parent)
+			printf("CL(%ld)_PAR[%p] ", (long)e->key, e->node->left->parent);
+		if (e->node->right && e->node->right != e->node->right->parent)
+			printf("CR(%ld)_PAR[%p] ", (long)e->key, e->node->right->parent);
+		break;
+		PR_AVLE(EParentChildSelf);
+		PR_AVLE(ESize);
+		PR_AVLE(ERoot);
+		PR_AVLE(EKey);
+	}
+#undef PR_AVLE
+}
 
 static void printlist(list *l)
 {
@@ -51,7 +95,7 @@ void testAVL(long size)
 
 
 
-void avlwalk(avltree *t)
+void avlWalk(avltree *t)
 {
 	/* chciał bym  by iteratory działały tak: */
 	/* for (iter i = begin(); i != end(); it.next()) */
@@ -66,7 +110,7 @@ void avlwalk(avltree *t)
 	}
 }
 
-void avlinsertarray(avltree *t, long * ar, size_t size)
+void avlInsertArray(avltree *t, long * ar, size_t size)
 {
 	int i;
 	for (i = 0; i < size; ++i)
@@ -187,7 +231,59 @@ void avlinsertarray(avltree *t, long * ar, size_t size)
 /* } */
 
 
-int insert_unique_random(avltree *t, long size, list *insertorder)
+/* TODO: check if in order walk gives strictly increasing monotonic sequence */
+static int avlConsistencyCheck2(avlnode *n, int *ncount, struct AVLError *er)
+{
+	if (n) {
+		++*ncount;
+		if (n->left) 
+			if (n->left->parent != n) {
+				er->kind = EParentChildMismatch;
+				return 0;
+			}
+		if (n->right)
+			if (n->right->parent != n) {
+				er->kind = EParentChildMismatch;
+				return 0;
+			}
+		if (n->right == n || n->left == n) {
+			er->kind = EParentChildSelf;
+			return 0;
+		}
+		if (!avlConsistencyCheck2(n->left, ncount, er) ||
+		    !avlConsistencyCheck2(n->right, ncount, er))
+		    return 0;
+	}
+	return 1;
+}
+
+static int avlConsistencyCheck(avltree *t, struct AVLError *er)
+{
+	avlnode *root = t->root;
+	if (!root) {
+		if (avlsize(t) != 0) {
+			er->kind = ESize;
+			return 0;
+		}
+		return 1;
+	} else {
+		if (root->parent) {
+			er->kind = ERoot;
+			return 0;
+		}
+	}
+	int ncount = 0;
+	if (avlConsistencyCheck2(root, &ncount, er)) {
+		if (avlsize(t) != ncount) {
+			er->kind = ESize;
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+static int insertUniqueRandom(avltree *t, long size, list *insertorder)
 {
 	long *tab = malloc(size * sizeof(long));
 
@@ -210,19 +306,19 @@ int insert_unique_random(avltree *t, long size, list *insertorder)
 }
 
 
-long select_random(avltree *t)
+static long selectRandom(avltree *t)
 {
 	size_t n = rand() % avlsize(t), i = 0;
 	avliterator it;
 	
 	if (avlbegin(t, &it)) {
 		if (i == n) 
-			return (long)it.node->data;
+			return (long)it.node->key;
 		else {
 			while (avlitnext(&it)) {
 				++i;
 				if (i == n)
-					return (long)it.node->data;
+					return (long)it.node->key;
 			}
 		}
 	}
@@ -230,23 +326,27 @@ long select_random(avltree *t)
 	return 0;
 }
 
-int remove_random(avltree *t, list *removeOrder)
+static int removeRandom(avltree *t, list *removeOrder, struct AVLError *er)
 {
 	while (!avlempty(t)) {
-		long rd = select_random(t);
-		printf("removing %ld: \n", rd);
-		avlprint(t);
-		lpush_back(removeOrder, (void *)rd);
-		void *data = avlerase(t, (void *)rd);
-		printf("[%ld, %ld] ", rd, (long)data);
-		if ((long)data != rd)
+		long rkey = selectRandom(t);
+		lpush_back(removeOrder, (void *)rkey);
+		void *key = avlerase(t, (void *)rkey);
+		
+		avlConsistencyCheck(t, er);
+		if (er->kind != ESuccess)
 			return 0;
+		if (rkey != (long)key) {
+			er->kind = EKey;
+			er->key = key;
+			return 0;
+		}
 	}
 	return 1;
 }
 
 
-int avltest_removing(int size, int loops)
+int avlTestRemoving(int size, int loops)
 {
 	avltree avlt, *t;
 	t = &avlt;
@@ -256,37 +356,48 @@ int avltest_removing(int size, int loops)
 	linit(&removeOrder);
 	int l = 0;
 	for (; l < loops; ++l) {
-		insert_unique_random(t, size, &insertOrder);
-		printf("order:\n");
-		printlist(&insertOrder);
-		if (!remove_random(t, &removeOrder)) { 
+		insertUniqueRandom(t, size, &insertOrder);
+		struct AVLError er;
+		initAVLError(&er);
+		if (!removeRandom(t, &removeOrder, &er)) {
+			printf("[%d/%d] AVLError: ", l + 1, loops);
+			printAVLError(&er);
+			printf("\n");
+			printf("insertion order:\n");
+			printlist(&insertOrder);
+			printf("\nremoval order:\n");
+			printlist(&removeOrder);
+			printf("\n");
 			
+			return 0;
 		}
+		lclear(&insertOrder);
+		lclear(&removeOrder);
 	}
-	return 0;
+	return 1;
 }
 
 
-int avlittest(avltree *t, long size, long repeat, list *insertorder)
+int avlIteratorTest(avltree *t, long size, long repeat, list *insertorder)
 {
 	long i;
 	for (i = 0; i < repeat; ++i) {
-		insert_unique_random(t, size, insertorder);
+		insertUniqueRandom(t, size, insertorder);
 		avliterator it;
 	
 		long expected = 0;
 		if (avlbegin(t, &it)) {
-			if ((long)it.node->data != expected) {
+			if ((long)it.node->key != expected) {
 				fprintf(stderr, "%ld %ld\n",
-				        expected, (long)it.node->data);
+				        expected, (long)it.node->key);
 				return 0;
 			}
 			/* avlitdesc(&it); */
 			while (avlitnext(&it)) {
 				++expected;
-				if ((long)it.node->data != expected) {
+				if ((long)it.node->key != expected) {
 					fprintf(stderr, "%ld %ld\n",
-					        expected, (long)it.node->data);
+					        expected, (long)it.node->key);
 					return 0;
 				}
 			}
@@ -296,11 +407,10 @@ int avlittest(avltree *t, long size, long repeat, list *insertorder)
 }
 
 
-int avltest()
+int avlTest()
 {
 
-	avltest_removing(7, 1);
-	return 0;
+	return avlTestRemoving(200, 1000);
 	
 	avltree avlt, *t;
 	list order;
@@ -311,14 +421,14 @@ int avltest()
 
 	/* te 3 linie spokojnie można wyjebać
 	 * (to się nazywa dokumentowanie kodu ;) */
-	insert_unique_random(t, 10, NULL);
+	insertUniqueRandom(t, 10, NULL);
 	avlprint(t);
 	exit(0);
 	
 		
 	
 	int rv;
-	while ((rv = insert_unique_random(t, 1000, &order))) {
+	while ((rv = insertUniqueRandom(t, 1000, &order))) {
 		avlclear(t);
 		lclear(&order);
 	}
@@ -340,7 +450,7 @@ int avltest()
 	list insertorder;
 	linit(&insertorder);
 	
-	if (!avlittest(t, 10, 1, &insertorder))
+	if (!avlIteratorTest(t, 10, 1, &insertorder))
 		fprintf(stderr, "avlittest failed\n");
 
 	//	testList();

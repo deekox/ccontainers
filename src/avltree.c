@@ -4,8 +4,8 @@
 #include <errno.h>
 #include <assert.h>
 
-#include "avltree.h"
-#include "list.h"
+#include "../include/avltree.h"
+#include "../include/list.h"
 
 enum operation {
 	INSERT,
@@ -40,7 +40,7 @@ static avlnode *alloc_node(void *data)
 	avlnode *n = malloc(sizeof(avlnode));
 	if (!n) return NULL;
 	n->left = n->right = n->parent = NULL;
-	n->data = data;
+	n->key = data;
 	n->height = -1;
 	n->balance = 0;
  	return n;
@@ -56,7 +56,7 @@ void avlrenderer(btnode *node, char *buf)
 	/* if (n->parent) */
 	/* 	pv = (long)n->parent->data; */
 	snprintf(buf, 11, "(%2ld __ %2ld)",
-	         (long)n->data, (long)n->balance);
+	         (long)n->key, (long)n->balance);
 	buf[10] = '\0';
 
 	/* if (n->parent) */
@@ -80,7 +80,7 @@ int avlchecknodebalance(avlnode *n)
 	if (d != n->balance)
 	{
 		fprintf(stderr, "BAD BALANCE:[%ld] ^%d =%d\n",
-		        (long)n->data, d, n->balance);
+		        (long)n->key, d, n->balance);
 		return 0;
 	}
 	return 1;
@@ -122,17 +122,17 @@ int avlparenttest(avlnode *n)
 		if (n->left && n->left->parent != n) {
 			long cpd = -1;
 			if (n->left->parent)
-				cpd = (long)n->left->parent->data;
+				cpd = (long)n->left->parent->key;
 			fprintf(stderr, "BAD PARENT L: pd: %ld   cpd: %ld\n",
-			        (long)n->data, cpd);
+			        (long)n->key, cpd);
 			return 0;
 		}
 		if (n->right && n->right->parent != n) {
 			long cpd = -1;
 			if (n->right->parent)
-				cpd = (long)n->right->parent->data;
+				cpd = (long)n->right->parent->key;
 			fprintf(stderr, "BAD PARENT R: pd: %ld   cpd: %ld\n",
-			        (long)n->data, cpd);
+			        (long)n->key, cpd);
 			return 0;
 		}
 		return avlparenttest(n->left) && avlparenttest(n->right);
@@ -315,7 +315,7 @@ void avlitdesc(avliterator *it)
 	if (it == NULL) 
 		printf("it == NULL\n");
 	else {
-		printf("->%ld ", (long)it->node->data);
+		printf("->%ld ", (long)it->node->key);
 		switch (it->move) {
 		case AVL_MOV_NONE:
 			printf("NONE"); break;
@@ -503,7 +503,7 @@ static avlnode **avlsrch_node(avltree *t, void *data, int *cmp)
 	if (cmp) *cmp = 0;
 	int r;
 	while (*cur) {
-		r = t->comp(data, (*cur)->data);
+		r = t->comp(data, (*cur)->key);
 		if (cmp)
 			*cmp = r;
 		if (r == 0) 
@@ -571,15 +571,17 @@ void *avlerase(avltree *t, void *data)
 	avlnode **holder = avlsrch_node(t, data, NULL);
 	if (*holder != NULL) {
 		avlnode *erased = *holder, *dirty = NULL;
-		void *data = (*holder)->data;
+		void *data = (*holder)->key;
 		
 		
 		if (erased->right == NULL) {
 			*holder = erased->left;
-			erased->left->parent = erased->parent;
+			if (erased->left)
+				erased->left->parent = erased->parent;
 		} else if (erased->left == NULL) {
 			*holder = erased->right;
-			erased->right->parent = erased->parent;
+			if (erased->right)
+				erased->right->parent = erased->parent;
 		} else {					
 			avlnode *prev = erased->left; /* perv in sense of in order walking */
 			while (prev->right)
@@ -591,10 +593,9 @@ void *avlerase(avltree *t, void *data)
 				prev->parent->right = prev->left;
 				if (prev->left)
 					prev->left->parent = prev->parent;
+				prev->left = erased->left;
+				prev->left->parent = prev;
 			}
-			prev->left = erased->left;
-			prev->left->parent = prev;
-
 			prev->parent = erased->parent;
 			*holder = prev;
 		}

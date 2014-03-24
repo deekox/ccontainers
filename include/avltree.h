@@ -10,7 +10,7 @@ typedef struct avl_tree          avltree;
 
 struct avl_tree_node {
 	avlnode *left, *right;
-	void *data;
+	void *key;
 	avlnode *parent;
 	int height;
 	short balance;

@@ -11,7 +11,7 @@ typedef struct binary_tree      btree;
 
 struct binary_tree_node {
 	btnode *left, *right;
-	void *data;
+	void *key;
 };
 
 

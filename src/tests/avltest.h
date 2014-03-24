@@ -2,9 +2,9 @@
 #define AVL_TEST_H
 
 
-int avltest();
+int avlTest();
 
-int avltest_removing(int size, int loops);
+int avlTestRemoving(int size, int loops);
 
 
 #endif 

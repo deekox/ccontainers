@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
-#include "btree.h"
-#include "list.h"
+#include "../include/common.h"
+#include "../include/btree.h"
+#include "../include/list.h"
 
 
 int lt(const void *l, const void *r)
@@ -34,7 +34,7 @@ int bin_tree_height(btnode *n)
 void free_node(btnode *n, int destroy_data)
 {
 	if (destroy_data)
-		free(n->data);
+		free(n->key);
 	free(n);
 }
 
@@ -71,7 +71,7 @@ void do_walk(btnode *n, int cur, int max, list *levels, int *cnt, int l)
 		do_walk(n->left, cur + 1, max, levels, cnt, -1);
 
 		struct pair *pp = malloc(sizeof(struct pair));
-		pp->value = (long)n->data;
+		pp->value = (long)n->key;
 		pp->order = (*cnt)++;
 		pp->left = l;
 		pp->node = n;

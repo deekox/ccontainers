@@ -1,6 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include <stdlib.h>
 
 typedef struct double_list_node lnode;
 typedef struct double_list      list;
