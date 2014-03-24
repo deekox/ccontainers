@@ -1,9 +1,7 @@
-# TODO: mkdir $(ODIR) $(OTEST_DIR)
-
 CC = clang
 CFLAGS = -Wall -Wno-unused-function
 DEBUGFLAGS =  -g3 -O0 -gdwarf-2
-#CFLAGS += $(DEBUGFLAGS)
+CFLAGS += $(DEBUGFLAGS)
 SDIR = src
 IDIR = include
 ODIR = obj

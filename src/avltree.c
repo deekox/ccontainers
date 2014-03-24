@@ -601,10 +601,10 @@ void *avlerase(avltree *t, void *data)
 
 		free_node_only((btnode *)erased);
 
-		avlnode *imba = compute_balance(dirty, ERASE);
-		if (imba) {
+		/* avlnode *imba = compute_balance(dirty, ERASE); */
+		/* if (imba) { */
 			/* rebalance(t, imba); */
-		}
+		/* } */
 
 
 		/* en - erased node

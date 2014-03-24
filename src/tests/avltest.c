@@ -1,9 +1,19 @@
 #include <time.h>
 #include <stdio.h>
+#include <assert.h>
 #include "avltest.h"
 #include "avltree.h"
 #include "list.h"
 
+static void printlist(list *l)
+{
+	lnode *it = l->head;
+	while (it) {
+		printf("%ld ", (long)it->data);
+		it = it->next;
+	}
+	printf("\n");
+}
 
 
 void testAVL(long size)
@@ -39,58 +49,7 @@ void testAVL(long size)
 
 }
 
-int insert_unique_random(avltree *t, long size, list *insertorder)
-{
-	long *tab = malloc(size * sizeof(long));
 
-	long i;
-	for (i = 0; i < size; ++i)
-		tab[i] = i;
-	while (size) {
-		long r = ((long)rand() << 32) | rand();
-		r %= size;
-		/* printf("%ld ", tab[r]); */
-		
-		if (insertorder)
-			lpush_back(insertorder, (void *)tab[r]);
-		if (avlinsert(t, (void *)tab[r]) == NULL)
-			return 0;
-		tab[r] = tab[size - 1];
-		--size;
-	}
-	/* putchar('\n'); */
-		
-	free(tab);
-	return 1;
-}
-
-int avlittest(avltree *t, long size, long repeat, list *insertorder)
-{
-	long i;
-	for (i = 0; i < repeat; ++i) {
-		insert_unique_random(t, size, insertorder);
-		avliterator it;
-	
-		long expected = 0;
-		if (avlbegin(t, &it)) {
-			if ((long)it.node->data != expected) {
-				fprintf(stderr, "%ld %ld\n",
-				        expected, (long)it.node->data);
-				return 0;
-			}
-			/* avlitdesc(&it); */
-			while (avlitnext(&it)) {
-				++expected;
-				if ((long)it.node->data != expected) {
-					fprintf(stderr, "%ld %ld\n",
-					        expected, (long)it.node->data);
-					return 0;
-				}
-			}
-		}
-	}
-	return 1;
-}
 
 void avlwalk(avltree *t)
 {
@@ -113,11 +72,6 @@ void avlinsertarray(avltree *t, long * ar, size_t size)
 	for (i = 0; i < size; ++i)
 		avlinsert(t, (void *)ar[i]);
 }
-
-
-
-
-
 
 
 /* void testTree() */
@@ -232,16 +186,122 @@ void avlinsertarray(avltree *t, long * ar, size_t size)
 /* 		printf("%ld: %ld\n", i, (long)v2t_DSW_FullSize(i)); */
 /* } */
 
-int avltest_removing()
+
+int insert_unique_random(avltree *t, long size, list *insertorder)
 {
+	long *tab = malloc(size * sizeof(long));
+
+	long i;
+	for (i = 0; i < size; ++i)
+		tab[i] = i;
+	while (size) {
+		long r = ((long)rand() << 32) | rand();
+		r %= size;
+		if (insertorder)
+			lpush_back(insertorder, (void *)tab[r]);
+		if (avlinsert(t, (void *)tab[r]) == NULL)
+			return 0;
+		tab[r] = tab[size - 1];
+		--size;
+	}
+		
+	free(tab);
+	return 1;
+}
+
+
+long select_random(avltree *t)
+{
+	size_t n = rand() % avlsize(t), i = 0;
+	avliterator it;
+	
+	if (avlbegin(t, &it)) {
+		if (i == n) 
+			return (long)it.node->data;
+		else {
+			while (avlitnext(&it)) {
+				++i;
+				if (i == n)
+					return (long)it.node->data;
+			}
+		}
+	}
+	assert(1 == 0);
 	return 0;
+}
+
+int remove_random(avltree *t, list *removeOrder)
+{
+	while (!avlempty(t)) {
+		long rd = select_random(t);
+		printf("removing %ld: \n", rd);
+		avlprint(t);
+		lpush_back(removeOrder, (void *)rd);
+		void *data = avlerase(t, (void *)rd);
+		printf("[%ld, %ld] ", rd, (long)data);
+		if ((long)data != rd)
+			return 0;
+	}
+	return 1;
+}
+
+
+int avltest_removing(int size, int loops)
+{
+	avltree avlt, *t;
+	t = &avlt;
+	avlinit(t, NULL);
+	list insertOrder, removeOrder;
+	linit(&insertOrder);
+	linit(&removeOrder);
+	int l = 0;
+	for (; l < loops; ++l) {
+		insert_unique_random(t, size, &insertOrder);
+		printf("order:\n");
+		printlist(&insertOrder);
+		if (!remove_random(t, &removeOrder)) { 
+			
+		}
+	}
+	return 0;
+}
+
+
+int avlittest(avltree *t, long size, long repeat, list *insertorder)
+{
+	long i;
+	for (i = 0; i < repeat; ++i) {
+		insert_unique_random(t, size, insertorder);
+		avliterator it;
+	
+		long expected = 0;
+		if (avlbegin(t, &it)) {
+			if ((long)it.node->data != expected) {
+				fprintf(stderr, "%ld %ld\n",
+				        expected, (long)it.node->data);
+				return 0;
+			}
+			/* avlitdesc(&it); */
+			while (avlitnext(&it)) {
+				++expected;
+				if ((long)it.node->data != expected) {
+					fprintf(stderr, "%ld %ld\n",
+					        expected, (long)it.node->data);
+					return 0;
+				}
+			}
+		}
+	}
+	return 1;
 }
 
 
 int avltest()
 {
-	srand(time(NULL));
 
+	avltest_removing(7, 1);
+	return 0;
+	
 	avltree avlt, *t;
 	list order;
 	linit(&order);
